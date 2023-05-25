@@ -98,7 +98,7 @@ class Render:
         height, width, _ = background.shape
         
         # Initialize the video writer
-        fourcc = cv.VideoWriter_fourcc(*'avc1')
+        fourcc = cv.VideoWriter_fourcc(*'mp4v')
         video_writer = cv.VideoWriter(filename, fourcc, fps, (width,height))
 
         # Define initial positions for each player

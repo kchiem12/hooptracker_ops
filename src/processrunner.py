@@ -40,9 +40,13 @@ class ProcessRunner:
         self.state.team1 = teams[0]
         self.state.team2 = teams[1]
 
+        self.state.team1_pos, self.state.team2_pos = team_detect.compute_possession(
+            self.state.possession, self.state.team1)
+
 
     def run_shot_detect(self):
         #TODO figure out madeshot and resolve conflict in state & takuma module
+        
         pass
 
 

@@ -1,3 +1,4 @@
+from typing import Tuple
 """
 Team Detection and Possession Finder
 
@@ -210,3 +211,23 @@ def team_split(frames):
             min_count = count
             best_team = team
     return best_team, pos_lst, player_list
+
+
+def compute_possession(player_pos, team1) -> Tuple[float, float]:
+    """
+    Input: player possession, list of players on team 1
+    Computes and returns team1 possession, team2 possession.
+    """
+    # total frames of each team's possession
+    team1_pos = 0
+    team2_pos = 0
+    for player, pos in player_pos.items():
+        for intervals in pos:
+            pos_time = intervals[1] - intervals[0]
+            if player in team1:
+                team1_pos += pos_time
+            else:
+                team2_pos += pos_time
+    total_pos = team1_pos + team2_pos
+    
+    return team1_pos / total_pos, team2_pos / total_pos
