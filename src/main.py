@@ -22,7 +22,6 @@ def load_config(path):
     return config
 
 
-
 def main(video_path):
     modelrunner = ModelRunner(video_path)
     modelrunner.run()
@@ -30,6 +29,8 @@ def main(video_path):
     output_video_path = 'tmp/court_video.mp4'
     processrunner = ProcessRunner(video_path, people_output, ball_output, output_video_path)
     processrunner.run()
+    results = processrunner.get_results()
+    print(results) # TODO change to be parsed into frontend
 
 
 if __name__ == '__main__':

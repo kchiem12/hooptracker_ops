@@ -1,5 +1,7 @@
+from typing import List, Tuple
 def new_rim(file_path):
     """
+    TODO is this function used?
     Accepts a strongsort text file path as an input, and outputs the coordinates 
     of the original rim and the new box above it. Assumption: the coordinates of 
     the rim do not move (constant) throughout the video. 
@@ -28,7 +30,7 @@ def new_rim(file_path):
     return top_box, rim_box
 
 
-def madeshot(file_path):
+def madeshot(file_path) -> List[Tuple[int, int]]:
     """
     Accepts a strongsort text file path as an input, and outputs the frame 
     intervals in which a shot was made. Ex: If a shot was made between the 
@@ -97,6 +99,7 @@ def madeshot(file_path):
                     rim_collision_end = 0
 
     return shots_made
+
 
 if __name__ == '__main__':
     print(new_rim('tmp/people.txt'))

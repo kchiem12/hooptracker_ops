@@ -29,7 +29,7 @@ class ProcessRunner:
         ball state, passes, player possession, and team possession
         """
         teams, pos_list, playerids = team_detect.team_split(self.state.states)
-        self.possession_list = pos_list
+        self.state.possession_list = pos_list
         for id in playerids:
             self.state.players[id] = {'shots': 0, "points": 0, "rebounds": 0, "assists": 0}
         self.state.ball_state = general_detect.ball_state_update(pos_list, 
@@ -46,8 +46,8 @@ class ProcessRunner:
 
     def run_shot_detect(self):
         #TODO figure out madeshot and resolve conflict in state & takuma module
-        
-        pass
+        made_shots = shot_detect.madeshot(self.players_tracking)
+        self.state.update_scores(made_shots)
 
 
     def run_courtline_detect(self):

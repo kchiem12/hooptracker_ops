@@ -45,8 +45,48 @@ class GameState:
         self.score2 = 0
         self.team1_pos = 0
         self.team2_pos = 0
+
+
+    def update_scores(self, madeshot_list) -> None:
+        """
+        TODO check for correctness, potentially move out of state.py
+        Description:
+            Returns a list of made shots with each shot represented as a tuple
+            and updates each team's and individual's scores.
+        Input:
+            madeshot_list [list]: list of made shot tuples
+            (frame, 0 if missed, 1 if made)
+        Output:
+            Returns None
+        """
+        madeshots = []
+        madeshot_lst = []
+        # Set counter to first made shot (where madeshot_list[counter][1] != 0)
+        counter = 0
+        for shot in madeshot_list:
+            if shot[1] != 0:
+                madeshot_lst.append(shot)
+        
+        # Iterate through possession list and find who made the shot
+        # TODO what if madeshot_lst is empty?
+        for pos in self.possession_list:
+            if pos[2] >= madeshot_lst[counter][0]:
+                madeshots.append((pos[0], madeshot_lst[counter][0]))
+                counter += 1
+                if counter >= len(madeshot_lst):
+                    break
+        # For each shot made update the player's and team's score
+        for shot in madeshots:
+            self.players[shot[0]]['shots'] += 1
+            self.players[shot[0]]['points'] += 2
+            if shot[0] in self.team1:
+                self.score1 += 2
+            else:
+                self.score2 += 2
+
+        return None
     
-    
+
     def __repr__(self) -> str:
         string1 = ("'Rim coordinates': " + (str(self.rim) if len(self.rim)>0 else "None") + "\n" +
                 "'Backboard coordinates':" + (str(self.backboard) if len(self.rim)>0 else "None") + "\n" +
