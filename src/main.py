@@ -26,7 +26,9 @@ def load_config(path):
 def main(video_path):
     modelrunner = ModelRunner(video_path)
     modelrunner.run()
-    processrunner = ProcessRunner(video_path, '', '')
+    people_output, ball_output = modelrunner.fetch_output()
+    output_video_path = 'tmp/court_video.mp4'
+    processrunner = ProcessRunner(video_path, people_output, ball_output, output_video_path)
     processrunner.run()
 
 

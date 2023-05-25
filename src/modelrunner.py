@@ -1,9 +1,11 @@
 """
 Runner module for ML models
 """
-import sys
 import os
 import cv2
+import pickle
+import subprocess
+from typing import Tuple
 
 class ModelRunner:
     """
@@ -44,6 +46,27 @@ class ModelRunner:
         Executes StrongSORT models and its related video pre- and post- processing.
         """
         # self.drop_frames(self.video_path)
+        # subprocess.run(['bash', 'src/StrongSORT-YOLO/run_tracker.sh'])
+        with open('tmp/output.pickle', 'rb') as f:
+            self.output_dict = pickle.load(f)
 
-    def get_outputs(self):
-        pass
+    
+    def fetch_output(self) -> Tuple[str, str]:
+        """Converts the people and ball model output in self.output.dict into txt files.
+        Returns a tuple of the people and ball txt output paths."""
+        ball_list = [tuple(round(num) for num in tup) 
+                     for tup in self.output_dict['basketball_data'][0]]
+        people_list = [tuple(round(num) for num in tup) 
+                       for tup in self.output_dict['person_data'][0]]
+        ball_data = [(' '.join(map(str, ball[0:7])) + ' -1 -1 -1 -1')
+                     for ball in ball_list]
+        people_data = [(' '.join(map(str, person[0:7])) + ' -1 -1 -1 -1')
+                       for person in people_list]
+
+        with open('tmp/ball.txt', 'w') as f:
+            f.write('\n'.join(ball_data))
+
+        with open('tmp/people.txt', 'w') as f:
+            f.write('\n'.join(people_data))
+
+        return 'tmp/people.txt', 'tmp/ball.txt'

@@ -14,7 +14,31 @@ tzdata==2023.3
 # API Requirements
 fastapi>=0.92.0
 uvicorn==0.22.0
-python-multipart=0.0.6
+python-multipart==0.0.6
 
 requests
 opencv-python==4.7.0.72
+
+# StrongSORT
+# base ----------------------------------------
+matplotlib>=3.2.2
+Pillow>=7.1.2
+PyYAML>=5.3.1
+torch==2.0.1
+torchvision==0.15.2
+tqdm>=4.41.0
+seaborn
+scipy
+# deep_sort -----------------------------------
+easydict
+
+Cython
+h5py
+tb-nightly
+future
+yacs
+gdown
+flake8
+yapf
+isort==4.3.21
+imageio
