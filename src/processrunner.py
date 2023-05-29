@@ -1,4 +1,6 @@
-"Runner module for processing and statistics"
+"""
+Runner module for processing and statistics
+"""
 from state import GameState
 from processing import general_detect, team_detect, shot_detect, courtline_detect
 class ProcessRunner:
@@ -14,8 +16,9 @@ class ProcessRunner:
         self.output_video_path = output_video_path
         self.state = GameState()
 
-    
+
     def run_general_detect(self):
+        """Runs various detection modules that updates GameState's rim states, ball"""
         rim_info, frames = general_detect.parse_output(self.state, self.players_tracking)
         self.state.rim, self.state.states = rim_info, frames
         general_detect.parse_ball(self.state, self.ball_tracking)
@@ -30,9 +33,9 @@ class ProcessRunner:
         """
         teams, pos_list, playerids = team_detect.team_split(self.state.states)
         self.state.possession_list = pos_list
-        for id in playerids:
-            self.state.players[id] = {'shots': 0, "points": 0, "rebounds": 0, "assists": 0}
-        self.state.ball_state = general_detect.ball_state_update(pos_list, 
+        for pid in playerids:
+            self.state.players[pid] = {'shots': 0, "points": 0, "rebounds": 0, "assists": 0}
+        self.state.ball_state = general_detect.ball_state_update(pos_list,
                                                                  len(self.state.states) - 1)
         self.state.passes = general_detect.player_passes(pos_list)
         self.state.possession = general_detect.player_possession(pos_list)
@@ -45,17 +48,22 @@ class ProcessRunner:
 
 
     def run_shot_detect(self):
+        """Runs shot detection and updates scores."""
         #TODO figure out madeshot and resolve conflict in state & takuma module
         made_shots = shot_detect.madeshot(self.players_tracking)
         self.state.update_scores(made_shots)
 
 
     def run_courtline_detect(self):
+        """Runs courtline detection and renders video."""
         court = courtline_detect.Render(self.video_path)
         court.render_video(self.state.states, self.state.players, self.output_video_path)
 
 
     def run(self):
+        """
+        Runs all processing and statistics.
+        """
         self.run_general_detect()
         self.run_team_detect()
         self.run_shot_detect()
@@ -64,6 +72,6 @@ class ProcessRunner:
 
     def get_results(self):
         """
-        Returns string of processed statistics
+        Returns string of processed statistics.
         """
-        return self.state.__repr__()
+        return repr(self.state)

@@ -9,8 +9,7 @@ Building a service for the community at large + low budget sports programs for S
 |   ├── modelrunner.py
 |   ├── processrunner.py
 |   ├── api/
-│   |   ├── backend.py # Fastapi backend server
-│   |   ├── aws-utils.py # AWS S3 connection
+│   |   ├── backend.py # Fastapi backend server + AWS
 |   ├── model/
 |   |   ├── StrongSORT-YOLO # object tracking
 |   |   ├── ... & tracker.py
@@ -19,10 +18,9 @@ Building a service for the community at large + low budget sports programs for S
 |   |   ├── player-detect.py
 |   |   ├── shot-detect.py
 |   |   ├── team-detect.py
-|   |   ├── view/ # Svelte frontend
-|   |   |   ├── App.svelte
-|   |   |   ├── src/
-|   |   |   |   ├── ...
+|   |   ├── view/ # Streamlit Frontend
+|   |   |   ├── static/
+|   |   |   ├── app.py
 |   ├── state.py # stores various state/stats on game
 ├── test/
 ├── tmp/ # temporary user data storage
@@ -37,6 +35,8 @@ cd Ball-101
 pip3 install -r requirements.txt
 ```
 
+Enable AWS connection by pasting the .env file into the repo.
+
 Start the server backend by running
 ```
 cd src/api
@@ -45,7 +45,7 @@ uvicorn backend:app --reload
 
 Open a new bash terminal and start the frontend by running
 ```
-TODO
+streamlit run src/view/app.py
 ```
 
 ## LucidChart Pipeline Diagram 

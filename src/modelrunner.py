@@ -12,10 +12,9 @@ class ModelRunner:
     Class for executing the YOLOV5 model on a specified video path.
     Returns 2 output files on player and ball detections
     """
-    def __init__(self, video_path) -> None:
+    def __init__(self, video_path, model_vars) -> None:
         self.video_path = video_path
-        # TODO model configs
-        self.frame_reduction_factor = 2
+        self.frame_reduction_factor = model_vars['frame_reduction_factor']
 
 
     def drop_frames(self, input_path) -> None:
@@ -45,15 +44,18 @@ class ModelRunner:
         """
         Executes StrongSORT models and its related video pre- and post- processing.
         """
-        # self.drop_frames(self.video_path)
-        # subprocess.run(['bash', 'src/StrongSORT-YOLO/run_tracker.sh'])
+        # comment first two lines out to exclude running the model
+        self.drop_frames(self.video_path)
+        subprocess.run(['bash', 'src/StrongSORT-YOLO/run_tracker.sh'])
         with open('tmp/output.pickle', 'rb') as f:
             self.output_dict = pickle.load(f)
 
     
     def fetch_output(self) -> Tuple[str, str]:
-        """Converts the people and ball model output in self.output.dict into txt files.
-        Returns a tuple of the people and ball txt output paths."""
+        """
+        Converts the people and ball model output in self.output.dict into txt files.
+        Returns a tuple of the people and ball txt output paths.
+        """
         ball_list = [tuple(round(num) for num in tup) 
                      for tup in self.output_dict['basketball_data'][0]]
         people_list = [tuple(round(num) for num in tup) 

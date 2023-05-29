@@ -10,6 +10,7 @@ def parse_output(state: GameState, output_path: str):
         <irrelevant>
     Object types: 0 - ball, 1 - player, 2 - rim
     Input:
+        state [GameState]: GameState object
         output_path [str]: path to output file
     Output:
         rim_info [dict]: dictionary containing rim coordinates
@@ -17,8 +18,8 @@ def parse_output(state: GameState, output_path: str):
     """
     frames = []
     rim_info = {}
-    with open(output_path, 'r') as f:
-        lines = f.readlines()
+    with open(output_path, 'r') as file:
+        lines = file.readlines()
         curr_frame = int(lines[0].split()[0])
         rim = True
         frame_info = {"frameno": curr_frame, "players": {}}
@@ -50,9 +51,12 @@ def parse_output(state: GameState, output_path: str):
 def parse_ball(state: GameState, ball_out) -> None:
     """
     Reads the ball output and updates state.states.
+    Input:
+        state [GameState]: GameState object
+        ball_out [str]: path to ball output file
     """
-    with open(ball_out, 'r') as f:
-        lines = f.readlines()
+    with open(ball_out, 'r') as file:
+        lines = file.readlines()
         curr_frame = lines[0].split()[0]
         idx = 0
         for i, frame in enumerate(state.states):
@@ -106,7 +110,7 @@ def player_passes(pos_lst) -> List[Tuple[int, int, int, int, int]]:
 def ball_state_update(pos_lst: list, lastframe) -> List[Tuple[int, int, BallState]]:
     """
     Reads in a possession list and the last frame of the game
-    Returns: List[frame1, frame2, BallState] that partitions each interval of 
+    Returns: List[frame1, frame2, BallState] that partitions each interval of
     frames by ballstate
     """
     # [(start_frame, end_frame, BallState)]

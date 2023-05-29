@@ -22,14 +22,14 @@ class Bin:
 
 class Render:
     '''
-    Object which, given video input and state data, 
+    Object which, given video input and state data,
     will produce video court visualization of player positions.
     '''
     def __init__(self, video_path:str, display_images:bool=False):
         '''
         Runs court detection on video input
         @param video_path is path from project root to video file
-        @param display_images determines whether or not to display images for debugging 
+        @param display_images determines whether or not to display images for debugging
         '''
         self._TRUE_PATH = os.path.join('data','true_map.png')
         self._VIDEO_PATH = video_path
@@ -54,7 +54,7 @@ class Render:
         self._TRUTH_COURT_MAP = cv.imread(self._TRUE_PATH,cv.IMREAD_GRAYSCALE)
         'True court map of half court'
 
-    
+
         # Downsample truth map
         height, width = self._TRUTH_COURT_MAP.shape[:2]
         new_height = int(height/2)
@@ -84,19 +84,19 @@ class Render:
 
     def render_video(self,states:list,players:dict,filename:str,fps:int=30):
         '''
-        Takes into player position data, applied homography, 
+        Takes into player position data, applied homography,
         and renders video stored in filename
-        @param states, list of dictionaries, 
+        @param states, list of dictionaries,
         each represent a frame with state info in chronological order
         @param players, dictionary of players where keys are players
         @param filename, file path from project root where video is saved
         @param fps, frames per second expected of produced video
         '''
-        players=players.keys() 
+        players=players.keys()
         # Create a blank image to use as the background for each frame
         background = cv.cvtColor(self._TRUTH_COURT_MAP,cv.COLOR_GRAY2BGR)
         height, width, _ = background.shape
-        
+
         # Initialize the video writer
         fourcc = cv.VideoWriter_fourcc(*'mp4v')
         video_writer = cv.VideoWriter(filename, fourcc, fps, (width,height))
@@ -106,7 +106,7 @@ class Render:
         for player in players:
             player_state.update({player:{'pos':(0,0),
                                         'color':(random.randint(0,256),random.randint(0,256),random.randint(0,256))}})
-        
+
         # find duration of video
         dur = states[-1]["frameno"]
         states += [{"frameno":dur+fps,"players":{}}]
@@ -116,7 +116,7 @@ class Render:
             # Create a copy of the background image to draw the points on
             frame = background.copy()
 
-            # Get dictionary of positions at each frame 
+            # Get dictionary of positions at each frame
             while (states[frame_index]["frameno"]<=t):
                 state = states[frame_index]
                 player_info = state['players']
@@ -132,8 +132,8 @@ class Render:
                 if frame_index>=len(states)-2>= 0 or states[frame_index+1]["frameno"] > t: # release if at end of contig
                     break
                 frame_index += 1
-            
-    
+
+
             # Loop through each point and draw it on the frame
             for player in players:
                 pos = player_state[player]['pos']
@@ -204,7 +204,7 @@ class Render:
         new_gray_img = self._apply_gray_homography(self._MASK_COURT_EDGES,best_pts,or_mask=True)
         second_gray_img = self._apply_gray_homography(self._MASK_COURT_EDGES,best_pts,or_mask=False)
 
-        
+
         cv.imshow('original', self._BGR_COURT)
         cv.imshow('mask', mask)
         cv.imshow('canny', canny_edges)
@@ -240,7 +240,7 @@ class Render:
         for col in range(weights.shape[1]):
             col_weight = np.full(weights.shape[0], min(col+1,weights.shape[1]-col))
             weights[:,col] = np.minimum(weights[:,col],col_weight)
-        weights = weights/np.sum(weights) 
+        weights = weights/np.sum(weights)
 
         # split image pixels into bins
         bins = np.zeros((one_bins,two_bins))
@@ -264,7 +264,7 @@ class Render:
                                 int(round(two_step*col)),
                                 int(round(two_step*(col+1)))))
         return sorted(top_bins, reverse=True, key=lambda bin: bin.value)
-        
+
     def _get_mask(self,img:np.ndarray, bin:Bin, morph:bool=True):
         '''
         Applies color range from specified bin
@@ -288,7 +288,7 @@ class Render:
             mask = cv.morphologyEx(mask,cv.MORPH_CLOSE,kernel,iterations=8) #get all court
             mask = cv.morphologyEx(mask,cv.MORPH_OPEN,kernel,iterations=30) #remove distractions
         return mask
-    
+
     def _apply_mask(self,img:np.ndarray, mask:np.ndarray):
         '''
         Applies bitwise and mask
@@ -309,7 +309,7 @@ class Render:
 
     def _thicken_edges(self,img:np.ndarray, iterations:int=2):
         '''
-        Thickens the edges in an image 
+        Thickens the edges in an image
         @param img, grayscale image of court edges
         @param iterations, severity of thickness
         @returns image with thicker court edges
@@ -333,7 +333,7 @@ class Render:
         '''
         # divide into two classes of lines, sorted by rho
         # TODO: sort lines using k-means, k=2
-        hor = lines[lines[:,0,1]<=np.pi/2] # baseline 
+        hor = lines[lines[:,0,1]<=np.pi/2] # baseline
         ver = lines[lines[:,0,1]>np.pi/2] # sideline
         hor = np.array(sorted(hor, key = lambda x : x[0][0]))
         ver = np.array(sorted(ver, key = lambda x : x[0][0]))
@@ -375,7 +375,7 @@ class Render:
                 return None
             return self._iterate_best_homography(hor,ver,relax_factor=relax_factor+0.25)
         return max_homography
-    
+
     def _evaluate_homography(self,pts_src:list,pts_dst:list):
         '''
         Evalues how well a homography performs on court
@@ -388,7 +388,7 @@ class Render:
         total = 171053/4
         goodness = float(np.count_nonzero(mapped_edge_img > 100)) / total
         return goodness
-            
+
     def _get_four_intersections(self,l1:list,l2:list,l3:list,l4:list,relax_factor=0):
         '''
         Gets four points from intersection of four lines.
@@ -406,7 +406,7 @@ class Render:
         d3 = self._distance(p3,p4)
         d4 = self._distance(p4,p1)
         relax = 1000*relax_factor
-        if (d1<600-relax or d1>800+relax or d3<600-relax or d3>800+relax or d2<50 or 
+        if (d1<600-relax or d1>800+relax or d3<600-relax or d3>800+relax or d2<50 or
             d2>300+relax or d4<50 or d4>300+relax or self._is_not_convex(p1,p2,p3,p4)):
             return None
         return (p1,p2,p3,p4)
@@ -429,14 +429,14 @@ class Render:
         x = (rho1*b2-rho2*a2) / d
         y = (-rho1*b1+rho2*a1) / d
         return (x,y)
-    
+
     def _distance(self,pt1:list,pt2:list):
         '''
         @param pt1, pt2, points given as (x,y) in pixels
         @returns Euclidean distnace between points
         '''
         return ((pt1[0]-pt2[0])**2 + (pt1[1]-pt2[1])**2)**0.5
-    
+
     def _is_not_convex(self,*pts:list):
         '''
         Checks if set of points is convex
@@ -454,7 +454,7 @@ class Render:
                 else:
                     prev = curr
         return False
-    
+
     def _cross_product(self,A:list):
         '''
         @param A, list of 3 vectors of dim 2
@@ -494,13 +494,13 @@ class Render:
             if good > max_good:
                 max_good = good
                 max_index = i
-        
+
         if max_good <= prev_good:
             return False
         else:
             self._BOX_BOUNDS = box_bounds[max_index]
             return True
-    
+
     def _fine_regress_box_boundary(self,pts_src,delta=range(1,5)):
         '''
         Finely adjust box boundary to get better homography
@@ -527,13 +527,13 @@ class Render:
             if good > max_good:
                 max_good = good
                 max_index = i
-        
+
         if max_good <= prev_good*1.001:
             return False
         else:
             self._BOX_BOUNDS = box_bounds[max_index]
             return True
-    
+
     def _apply_hough(self,img:np.ndarray, lines:list):
         '''
         Draws lines from hough transformation onto image
@@ -547,10 +547,10 @@ class Render:
             a, b = np.cos(theta), np.sin(theta)
             x0, y0 = a*rho, b*rho
             x1, y1 = int(x0 + 2000*(-b)), int(y0 + 2000*(a))
-            x2, y2 = int(x0 - 2000*(-b)), int(y0 - 2000*(a)) 
+            x2, y2 = int(x0 - 2000*(-b)), int(y0 - 2000*(a))
             cv.line(out,(x1,y1),(x2,y2),[0,0,255])
         return out
-    
+
     def _transform_point(self,x:float,y:float):
         '''
         Applies court homography to single point
@@ -565,10 +565,10 @@ class Render:
 
     def _apply_gray_homography(self,im_src:np.ndarray, pts_src:list, pts_dst=None, or_mask=False):
         '''
-        Return warped image given list of four pts 
+        Return warped image given list of four pts
         @Preconditions: im_src is grayscale image of masked edges
         src_pts: list of fours (x,y)* starting at back right corner of box and looping around counterclockwise
-        or_mask: lets us see all parts of both truth map and homographied image 
+        or_mask: lets us see all parts of both truth map and homographied image
         '''
         im_dst = self._TRUTH_COURT_MAP.copy()
         if pts_dst is None:
@@ -583,7 +583,7 @@ class Render:
 
     def _apply_bgr_homography(self,im_src:np.ndarray, pts_src:list):
         '''
-        Return warped bgr image given list of four pts 
+        Return warped bgr image given list of four pts
         @Preconditions: im_src is bgr image of court
         src_pts: list of fours (x,y)* starting at back right corner of box and looping around counterclockwise
         '''
@@ -700,7 +700,7 @@ class Render:
                     continue
                 canny = self._get_canny(gray_img, threshold1=one, threshold2=two)
                 masked_canny = self._apply_mask(canny, mask)
-                cv.imshow(str(one)+' by '+str(two), masked_canny) 
+                cv.imshow(str(one)+' by '+str(two), masked_canny)
 
     def _test_many_hough(self,gray_img:np.ndarray, canny:np.ndarray, grid:list):
         '''

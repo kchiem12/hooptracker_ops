@@ -229,5 +229,5 @@ def compute_possession(player_pos, team1) -> Tuple[float, float]:
             else:
                 team2_pos += pos_time
     total_pos = team1_pos + team2_pos
-    
+
     return team1_pos / total_pos, team2_pos / total_pos

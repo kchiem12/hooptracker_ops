@@ -43,5 +43,9 @@ yapf
 isort==4.3.21
 imageio
 
+# View
+streamlit>=1.18.1
+hydralit_components>= 1.0.10
+
 # Misc
 pylint

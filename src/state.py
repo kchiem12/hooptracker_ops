@@ -3,7 +3,6 @@ Module containing state of game statistics
 """
 from enum import Enum
 
-
 class BallState(Enum):
     """
     Indicates the status of the ball at any given frame.
@@ -19,14 +18,23 @@ class GameState:
     """
     def __init__(self) -> None:
         """
-        Initialises state; 
+        Initialises state; contains the following instance variables:
+        rim: rim position
+        backboard: backboard position TODO
+        states: list of dictionaries with info at each frame
+        possession_list: list of ball possession tuples
+        passes: dictionary of passes with their start and end frames and players involved
+        possession: dictionary of players with their possessions as list of frame tuples
+        team1, team2: list of players on each team
+        score1, score2: score of each team
+        team1_pos, team2_pos: percentage of possession for each team
         """
         # IMMUTABLE
         self.rim = None
         self.backboard = None
-        
+
         # MUTABLE
-        # [{'ball': {xmin, xmax, ymin, ymax}, 'playerid'...}]
+        # [{'frameno': #, 'ball': {xmin, xmax, ymin, ymax}, 'playerid'...}]
         self.states = None
         self.possession_list = None
         # {'playerid': {'shots': 0, "points": 0, "rebounds": 0, "assists": 0}}
@@ -34,7 +42,7 @@ class GameState:
         # [(start_frame, end_frame, BallState)]
         self.ball_state = None
         # {'pass_id': {'frames': (start_frame, end_frame)}, 'players':(p1_id, p2_id)}}
-        self.passes = None 
+        self.passes = None
         # {'player_id': [(start_frame, end_frame), ...]}
         self.possession = None
         self.team1 = None
@@ -47,17 +55,17 @@ class GameState:
         self.team2_pos = 0
 
 
-    def update_scores(self, madeshot_list) -> None:
+    def update_scores(self, madeshot_list):
         """
-        TODO check for correctness, potentially move out of state.py
+        TODO check for correctness + potentially move out of state.py
         Description:
             Returns a list of made shots with each shot represented as a tuple
             and updates each team's and individual's scores.
         Input:
             madeshot_list [list]: list of made shot tuples
             (frame, 0 if missed, 1 if made)
-        Output:
-            Returns None
+        Effect:
+            Updates self.score1, self.score2.
         """
         madeshots = []
         madeshot_lst = []
@@ -66,7 +74,7 @@ class GameState:
         for shot in madeshot_list:
             if shot[1] != 0:
                 madeshot_lst.append(shot)
-        
+
         # Iterate through possession list and find who made the shot
         # TODO what if madeshot_lst is empty?
         for pos in self.possession_list:
@@ -84,23 +92,23 @@ class GameState:
             else:
                 self.score2 += 2
 
-        return None
-    
 
     def __repr__(self) -> str:
-        string1 = ("'Rim coordinates': " + (str(self.rim) if len(self.rim)>0 else "None") + "\n" +
-                "'Backboard coordinates':" + (str(self.backboard) if len(self.rim)>0 else "None") + "\n" +
-                "'Court lines coordinates':" + "None" + "\n" +
-                "'Number of frames':" + str(len(self.states)) + "\n" +
-                "'Number of players':" + str(len(self.players)) + "\n" +
-                "'Number of passes': " + str(len(self.passes)) + "\n" +
-                "'Team 1': " + str(self.team1) + "\n" +
-                "'Team 2': " + str(self.team2) + "\n" +
-                "'Team 1 Score': " + str(self.score1) + "\n" +
-                "'Team 2 Score': " + str(self.score2) + "\n" +
-                "'Team 1 Possession': " + str(self.team1_pos) + "\n" +
-                "'Team 2 Possession': " + str(self.team2_pos))
-        string2 = ""
+        result_dict = {
+        "Rim coordinates": str(self.rim) if len(self.rim) > 0 else "None",
+        "Backboard coordinates": str(self.backboard) if len(self.rim) > 0 else "None",
+        "Court lines coordinates": "None",
+        "Number of frames": str(len(self.states)),
+        "Number of players": str(len(self.players)),
+        "Number of passes": str(len(self.passes)),
+        "Team 1": str(self.team1),
+        "Team 2": str(self.team2),
+        "Team 1 Score": str(self.score1),
+        "Team 2 Score": str(self.score2),
+        "Team 1 Possession": str(self.team1_pos),
+        "Team 2 Possession": str(self.team2_pos)
+        }
         for player in self.players:
-            string2 += "'" + player + "': " + str(self.players[player]) + "\n"
-        return string1 + "\n" + string2[:-1]
+            result_dict[player] = str(self.players[player])
+
+        return str(result_dict)

@@ -1,0 +1,30 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.8"]
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v3
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        sudo apt-get install -y ffmpeg
+    - name: Initialising AWS credentials
+      run: cat /home/runner/work/Ball-101/Ball-101/.env | base64
+    - name: Putting data
+      env:
+        DATA: ${{ secrets.AWS_ENV }}
+      run: echo $DATA >> /home/runner/work/Ball-101/Ball-101/.env
+    - name: Run CI tests
+      run: |
+        python src/processing/shot_detect.py

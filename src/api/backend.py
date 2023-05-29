@@ -7,12 +7,17 @@ from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import StreamingResponse
 import pandas as pd
 import boto3
+from dotenv import load_dotenv
+
+# Amazon S3 Connection
+load_dotenv()
+access_key = os.getenv('AWS_ACCESS_KEY_ID')
+secret_key = os.getenv('AWS_SECRET_ACCESS_KEY')
+
+s3 = boto3.client('s3', aws_access_key_id=access_key,
+                  aws_secret_access_key=secret_key)
 
 app = FastAPI()
-
-#Amazon S3 Connection
-s3 = boto3.client('s3', aws_access_key_id='AKIAXPTBCF7QBHEKZ5DE', 
-                  aws_secret_access_key='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')
 
 # Root
 @app.get("/")
@@ -35,6 +40,9 @@ async def upload_file(video_file: UploadFile = File(...)):
 
 @app.get('/download/{file_name}')
 async def download_file(file_name, download_path):
+    """
+    Download video with file_name to download_path
+    """
     try:
         s3.download_file('ball-uploads', file_name, download_path)
         return {'message': f'successfully downloaded {file_name} to {download_path}', 'status': 'success'}
