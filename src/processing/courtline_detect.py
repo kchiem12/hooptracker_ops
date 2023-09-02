@@ -380,13 +380,13 @@ class Render:
         '''
         Evalues how well a homography performs on court
         @param pts_src, four points on court image of box, counterclockwise
-        @param pts_src, four points on true image of court to map to
+        @param pts_src, four points on true image of court to map toz
         @return goodness, proportion of intersection.
         '''
         assert(pts_src is not None)
         mapped_edge_img = self._apply_gray_homography(self._MASK_COURT_EDGES,pts_src,pts_dst=pts_dst)
-        total = 171053/4
-        goodness = float(np.count_nonzero(mapped_edge_img > 100)) / total
+        total_max_overlap = self._max_pixel_overlap(self._MASK_COURT_EDGES,pts_src,pts_dst=pts_dst)
+        goodness = float(np.count_nonzero(mapped_edge_img > 100)) / total_max_overlap
         return goodness
 
     def _get_four_intersections(self,l1:list,l2:list,l3:list,l4:list,relax_factor=0):
@@ -514,7 +514,8 @@ class Render:
         box_bounds = []
         for i in [0,1,2,3]:
             for j in [0,1]:
-                for k in [-1,1]:
+                epsilon = random.random()
+                for k in [-epsilon,epsilon]:
                     for d in delta:
                         copy = self._BOX_BOUNDS.copy()
                         copy[i,j] += d*k
@@ -528,7 +529,7 @@ class Render:
                 max_good = good
                 max_index = i
 
-        if max_good <= prev_good*1.001:
+        if max_good <= prev_good*1.00001:
             return False
         else:
             self._BOX_BOUNDS = box_bounds[max_index]
@@ -580,6 +581,16 @@ class Render:
             return cv.bitwise_or(im_out,self._invert_grayscale(im_dst))
         else:
             return cv.bitwise_and(im_out,self._invert_grayscale(im_dst))
+    
+    def _max_pixel_overlap(self,im_src:np.ndarray, pts_src:list, pts_dst=None):
+        '''
+        Returns max number of pixels homography can obtain given camera viewport
+        @Preconditions: im_src is grayscale image of masked edges
+        src_pts: list of fours (x,y)* starting at back right corner of box and looping around counterclockwise
+        '''
+        all_white = np.full_like(im_src,255)
+        max_overlap = self._apply_gray_homography(all_white,pts_src,pts_dst=pts_dst)
+        return np.count_nonzero(max_overlap > 100)
 
     def _apply_bgr_homography(self,im_src:np.ndarray, pts_src:list):
         '''
@@ -717,7 +728,7 @@ class Render:
                     cv.imshow(str(rho)+' by '+str(round(theta,3))+' by '+str(threshold), hough)
 
 if __name__ == '__main__':
-    video_path = os.path.join('data','training_data.mov')
+    video_path = os.path.join('data','training_data.mp4')
     render = Render(video_path=video_path,display_images=True)
 
     # x,y = 800,460
