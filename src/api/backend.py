@@ -7,6 +7,7 @@ from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import StreamingResponse
 import pandas as pd
 import boto3
+import os
 from dotenv import load_dotenv
 
 # Amazon S3 Connection
