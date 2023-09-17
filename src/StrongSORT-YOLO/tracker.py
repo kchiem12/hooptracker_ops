@@ -28,7 +28,8 @@ def test():
     print('import worked')
 
 if __name__ == '__main__':
-    output = get_data('../../data/benson.mp4')
+    # TODO change to actual video path
+    output = get_data('../../data/training_data.mp4')
     print(output['basketball_data'])
     with open('../../tmp/test_output.pickle', 'wb') as f:
         pickle.dump(output, f)
