@@ -17,14 +17,14 @@ class ModelRunner:
         self.frame_reduction_factor = model_vars['frame_reduction_factor']
 
 
-    def drop_frames(self, input_path) -> None:
+    def drop_frames(self, input_path) -> str:
         """
-        Alters the input video fps to 1 / reduction_factor. Irreversible operation.
+        Alters the input video fps to 1 / reduction_factor. Stores + returns new video in output_path.
         """
-        dummy_path = 'tmp/temp.mp4'
+        output_path = 'tmp/temp.mp4'
         video = cv2.VideoCapture(input_path)
         nframes = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
-        output_video = cv2.VideoWriter(dummy_path, cv2.VideoWriter_fourcc(*'mp4v'),
+        output_video = cv2.VideoWriter(output_path, cv2.VideoWriter_fourcc(*'mp4v'),
                                     int(video.get(cv2.CAP_PROP_FPS)/2), (int(video.get(
             cv2.CAP_PROP_FRAME_WIDTH)), int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))))
         for i in range(nframes):
@@ -36,8 +36,9 @@ class ModelRunner:
 
         video.release()
         output_video.release()
-        os.remove(input_path)
-        os.rename(dummy_path, input_path)
+        #os.remove(input_path)
+        #os.rename(output_path, input_path)
+        return output_path
 
 
     def run(self):
@@ -45,8 +46,8 @@ class ModelRunner:
         Executes StrongSORT models and its related video pre- and post- processing.
         """
         # comment first two lines out to exclude running the model
-        self.drop_frames(self.video_path)
-        subprocess.run(['bash', 'src/StrongSORT-YOLO/run_tracker.sh'])
+        # self.drop_frames(self.video_path)
+        # subprocess.run(['bash', 'src/StrongSORT-YOLO/run_tracker.sh'])
         with open('tmp/output.pickle', 'rb') as f:
             self.output_dict = pickle.load(f)
 

@@ -36,6 +36,10 @@ def process_video(video_file):
     if response.status_code == 200:
         data = response.json()
         st.session_state.upload_name = data.get('message')
+        # temp fix
+        with open('tmp/user_upload.mp4', 'wb') as f:
+            #f.write(video_file.value)
+            f.write(video_file.getvalue())
     else:
         print('error uploading file') # maybe make an error handler in frontend
     st.session_state.is_downloaded = False
@@ -179,10 +183,9 @@ def fetch_result_video():
     '''
     Updates and returns the resulting video to be displayed.
     TODO change to calling backend instead of accessing from repo
-    TODO currently display does not work properly. change encoding?
     '''
     if st.session_state.processed_video is None:
-        st.session_state.processed_video = 'tmp/court_video.mp4'
+        st.session_state.processed_video = 'tmp/court_video_reenc.mp4'
     return st.session_state.processed_video
 
 
@@ -191,8 +194,17 @@ def fetch_result_string():
     Updates and returns the resulting statistics in string format.
     TODO change to calling backend instead of accessing from repo
     '''
-    if st.session_state.result_string is None:
-        st.session_state.result_string = main('data/training_data.mp4')
+    # if st.session_state.result_string is None:
+    #     response = requests.get(SERVER_URL+f"download/{st.session_state.upload_name}", files=
+    #                             {'file_name': st.session_state.upload_name, 'download_path': 
+    #                              'tmp/user_upload.mp4'}, timeout=30)
+    #     if response.status_code == 200:
+    #         st.session_state.result_string = main('tmp/user_upload.mp4')
+    #     else:
+    #         print('error downloading file') # maybe make an error handler in frontend
+    #         st.session_state.result_string = main('data/training_data.mp4')
+    
+    st.session_state.result_string = main('tmp/user_upload.mp4')
     return st.session_state.result_string
 
 

@@ -2,18 +2,20 @@
 Runner module for processing and statistics
 """
 from state import GameState
-from processing import general_detect, team_detect, shot_detect, courtline_detect
+from processing import general_detect, team_detect, shot_detect, courtline_detect, video_render
 class ProcessRunner:
     """
     Runner class taking in: original video file path, 2 model output files, render destination path
     Performs player, team, shot, and courtline detection in sequence.
     Effect: updates GameState with statistics and produces courtline video.
     """
-    def __init__(self, video_path, players_tracking, ball_tracking, output_video_path) -> None:
+    def __init__(self, video_path, players_tracking, ball_tracking, output_video_path, 
+                 output_video_path_reenc) -> None:
         self.video_path = video_path
         self.players_tracking = players_tracking
         self.ball_tracking = ball_tracking
         self.output_video_path = output_video_path
+        self.output_video_path_reenc = output_video_path_reenc
         self.state = GameState()
 
 
@@ -55,9 +57,18 @@ class ProcessRunner:
 
 
     def run_courtline_detect(self):
-        """Runs courtline detection and renders video."""
+        """Runs courtline detection."""
         court = courtline_detect.Render(self.video_path)
-        court.render_video(self.state.states, self.state.players, self.output_video_path)
+        self.homography = court.get_homography()
+        # court.render_video(self.state.states, self.state.players, self.output_video_path)
+
+
+    def run_video_render(self):
+        """Runs video rendering and reencodes, stores to output_video_path_reenc."""
+        videoRender = video_render.VideoRender(self.homography)
+        videoRender.render_video(self.state.states, self.state.players, self.output_video_path)
+        videoRender.reencode(self.output_video_path, 
+                              self.output_video_path_reenc)
 
 
     def run(self):
@@ -68,6 +79,7 @@ class ProcessRunner:
         self.run_team_detect()
         self.run_shot_detect()
         self.run_courtline_detect()
+        self.run_video_render()
 
 
     def get_results(self):
