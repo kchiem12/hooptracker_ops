@@ -40,7 +40,7 @@ def main(video_path):
     output_video_path = 'tmp/court_video.mp4'
     output_video_path_reenc = 'tmp/court_video_reenc.mp4'
 
-    processrunner = ProcessRunner(video_path, people_output, ball_output, output_video_path, 
+    processrunner = ProcessRunner(video_path, people_output, ball_output, output_video_path,
                                   output_video_path_reenc)
     processrunner.run()
     results = processrunner.get_results()
