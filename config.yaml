@@ -1,2 +1,52 @@
-model_vars:
-  frame_reduction_factor: 2
+default_config : "config.yaml" # path to default config file
+
+# Model parameters
+frame_reduction_factor: 2 # cuts on number of frames by this factor
+player_weights: 'src/strongsort/weights/best.pt' # path to player and rim weights for yolov5 + stronsort
+ball_weights: 'src/strongsort/weights/best_basketball.pt' # path to ball weights for yolov5 + stronsort 
+pose_weights: 'src/pose_estimation/best.pt' # path to pose estimation weights for yolov8-pose
+player_thres:
+  conf_thres: 0.25 # bbox below threshold are ignored
+  iou_thres: 0.25 # bboxes that overlap more than this are ignored
+pose_thres:
+  conf: 0.3
+skip_big: true # if true, skips big objects for ball detection
+cls: # obj type as detected by strongsort
+  ball: 0
+  player: 1
+  rim: 2
+save_vid: false # save output of models
+show_vid:
+  player: false
+  ball: false
+  pose: false
+model_videos: # path to saved videos
+  player: '' 
+  ball: ''
+  pose: ''
+model_verbose: false # if true, prints model output to console
+
+# Backend pipeline parameters
+skip_model: false # if true, skips model running
+skip_process: false # if true, skips processing
+skip_court: false # if true, skips court detection
+skip_player_filter: false # if true, allows all tracked ids to be accounted
+
+# Processing parameters
+filter_threshold: 10 # min frames for player to be considered in possession
+join_threshold: 20 # max frames for same player to still be in possession
+shot_window: 10 # window of frames to look at ball intersecting top box and rim box
+
+# User Input
+video_file: 'data/short_new_2.mov' # file to be processed
+
+# File name parameter for output
+output: 'tmp' # output folder for model/processing esults and processed videos
+basename: '' # base name of output files
+people_file: 'tmp/people.txt' # file name of strongsort output for players and rim
+ball_file: 'tmp/ball.txt' # file name of strongsort output for ball
+pose_file: 'tmp/pose.txt' # file name of pose output for ball
+minimap_file: 'tmp/minimap.mp4' # file name of minimap video
+minimap_temp_file: 'tmp/minimap_temp.mp4' # file name of minimap video
+processed_file: 'tmp/processed.mp4' # file name of processed video
+results_file: 'tmp/results.txt' # file name of results file

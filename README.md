@@ -27,7 +27,6 @@ Building a service for the community at large + low budget sports programs for S
 │   ├── modelrunner.py # runs all models
 │   ├── processrunner.py # runs all processing
 │   └── state.py # data structure for everything
-├── static  # store images for repo
 ├── test # unit tests
 └── tmp # stores generated files
 ```
@@ -56,4 +55,4 @@ streamlit run src/view/app.py
 ```
 
 ## Pipeline Diagram 
-![hooptracker pipeline diagram](static/diagram.png)
+![hooptracker pipeline diagram](data/diagram.png)
