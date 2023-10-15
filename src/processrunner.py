@@ -67,7 +67,7 @@ class ProcessRunner:
         """Runs video rendering and reencodes, stores to output_video_path_reenc."""
         videoRender = video_render.VideoRender(self.homography)
         videoRender.render_video(self.state.states, self.state.players, self.output_video_path)
-        videoRender.reencode(self.output_video_path, 
+        videoRender.reencode(self.output_video_path,
                               self.output_video_path_reenc)
 
 
