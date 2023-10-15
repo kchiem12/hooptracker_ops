@@ -2,7 +2,7 @@ venv
 .env
 __pycache__
 yolov8m-pose.pt
-*.mp4  # ignores all .mp4 files; remove this line if some .mp4 files should be tracked
+*.mp4
 ball/lib/python3.11/site-packages/torch/lib/libtorch_cpu.dylib
 venv/lib/python3.11/site-packages/torch/lib/libtorch_cpu.dylib
 ball/
