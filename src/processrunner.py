@@ -9,7 +9,7 @@ class ProcessRunner:
     Performs player, team, shot, and courtline detection in sequence.
     Effect: updates GameState with statistics and produces courtline video.
     """
-    def __init__(self, video_path, players_tracking, ball_tracking, output_video_path, 
+    def __init__(self, video_path, players_tracking, ball_tracking, output_video_path,
                  output_video_path_reenc) -> None:
         self.video_path = video_path
         self.players_tracking = players_tracking

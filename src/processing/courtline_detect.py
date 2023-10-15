@@ -318,7 +318,11 @@ class Render:
         assert(pts_src is not None)
         mapped_edge_img = self._apply_gray_homography(self._MASK_COURT_EDGES,pts_src,pts_dst=pts_dst)
         total_max_overlap = self._max_pixel_overlap(self._MASK_COURT_EDGES,pts_src,pts_dst=pts_dst)
-        goodness = float(np.count_nonzero(mapped_edge_img > 100)) / total_max_overlap
+        if total_max_overlap != 0:
+            goodness = float(np.count_nonzero(mapped_edge_img > 100)) / total_max_overlap
+        else:
+            goodness = 0
+
         return goodness
 
     def _get_four_intersections(self,l1:list,l2:list,l3:list,l4:list,relax_factor=0):
