@@ -3,6 +3,43 @@ Module containing state of game statistics
 """
 from enum import Enum
 
+class ShotType(Enum):
+        "Status of shot, paired with point value"
+        MISS = 0
+        TWO = 2
+        THREE = 3
+
+class ShotAttempt:
+    """
+    A single shot attempt
+    """
+    def __init__(self, start:int, end:int) -> None:
+        """
+        Initializes shot attempt containing
+        start: first frame
+        end: last frame
+        playerid: shot's player
+        type: MISSED, TWO, or THREE
+        """
+        #IMMUTABLE
+        self.start : int = start
+        self.end : int = end
+
+        #MUTABLE
+        self.playerid : int = None
+        self.type : ShotType = None
+    
+    def check(self) -> bool:
+        "verifies if well-defined"
+        try:
+            assert (self.start <= self.end)
+            assert (self.start != None and self.end != None
+                    and self.playerid != None and self.type != None)
+        except:
+            return False
+        return True
+
+
 class BallState(Enum):
     """
     Indicates the status of the ball at any given frame.
