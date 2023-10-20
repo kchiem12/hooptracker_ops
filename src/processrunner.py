@@ -24,6 +24,8 @@ class ProcessRunner:
         rim_info, frames = general_detect.parse_output(self.state, self.players_tracking)
         self.state.rim, self.state.states = rim_info, frames
         general_detect.parse_ball(self.state, self.ball_tracking)
+        #TODO testing belowing parsing function for new ball tracking
+        general_detect.parse_ball2(self.state, self.ball_tracking)
 
 
     def run_team_detect(self):
@@ -52,7 +54,7 @@ class ProcessRunner:
     def run_shot_detect(self):
         """Runs shot detection and updates scores."""
         #TODO figure out madeshot and resolve conflict in state & takuma module
-        made_shots = shot_detect.madeshot(self.players_tracking)
+        made_shots = shot_detect.madeshot(self.state) # state already has rim information
         self.state.update_scores(made_shots)
 
 
