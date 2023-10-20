@@ -1,4 +1,7 @@
 from typing import List, Tuple
+from state import GameState, ShotAttempt, ShotType
+
+
 def new_rim(file_path):
     """
     TODO is this function used?
@@ -30,14 +33,14 @@ def new_rim(file_path):
     return top_box, rim_box
 
 
-def madeshot(file_path) -> List[Tuple[int, int]]:
+def madeshot(state:GameState) -> List[Tuple[int, int]]:
     """
     Accepts a strongsort text file path as an input, and outputs the frame
     intervals in which a shot was made. Ex: If a shot was made between the
     frames 0 and 10, the output of madeshot() will be [(0, 10)].
     """
     # Initialize values
-    top, rim = new_rim(file_path)
+    rim = state.rim 
     shots_made = []
     passed_top = False
     passed_rim = False

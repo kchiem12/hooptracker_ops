@@ -1,5 +1,5 @@
 from typing import Tuple, List, Dict
-from state import BallState, GameState
+from state import BallType, BallState, GameState
 
 def parse_output(state: GameState, output_path: str):
     """
@@ -22,7 +22,7 @@ def parse_output(state: GameState, output_path: str):
         lines = file.readlines()
         curr_frame = int(lines[0].split()[0])
         rim = True
-        frame_info = {"frameno": curr_frame, "players": {}}
+        frame_info = {"frameno": curr_frame, "players": {}, "balls": {}}
         for line in lines:
             curr = line.split()
             if curr_frame != curr[0]:
@@ -66,7 +66,7 @@ def parse_ball(state: GameState, ball_out) -> None:
         frame_info = {}
         for line in lines:
             curr = line.split()
-            if curr_frame != curr[0]:
+            if curr_frame != curr[0]: # if first frame is not at first ball
                 state.states[idx].update(frame_info)
                 for i in range(idx, len(state.states)):
                     if state.states[i].get("frameno") == int(curr[0]):
@@ -82,6 +82,36 @@ def parse_ball(state: GameState, ball_out) -> None:
                 'xmax': int(curr[3]) + int(curr[5]),
                 'ymax': int(curr[4]) + int(curr[6])
             }
+    return None
+
+def parse_ball2(state: GameState, ball_out) -> None:
+    """
+    Reads the ball output and updates state.states for "balls".
+    Input:
+        state [GameState]: GameState object
+        ball_out [str]: path to ball output file
+    Assume: frame numbers are shared between ball and people
+    """
+    BALL = 0
+    with open(ball_out, 'r') as file:
+        lines = [ [int(x) for x in line.split()] 
+                 for line in file.readlines()] # lines[idb][0-6]
+        b = 0 #index of line in ball
+        s = 0 #index of state
+        while s < len(state.states) and b < len(lines):
+            bframe, obj_type, b_id, xmin, ymin, xwidth, ywidth = lines[b][:7]
+            sframe = state.states[s].get("frameno")
+            if obj_type != BALL:
+                b += 1
+            elif bframe < sframe: #catch up
+                b += 1
+            elif bframe > sframe:
+                s += 1
+            else: #bframe = sframe, update frame
+                bs:BallState = BallState(xmin, ymin, xmax=xmin+xwidth, ymax=ymin+ywidth)
+                b_id:str = "ball" + b_id
+                state.states[s].get("balls").update({b_id : bs})
+                b += 1
     return None
 
 
@@ -107,7 +137,7 @@ def player_passes(pos_lst) -> List[Tuple[int, int, int, int, int]]:
     return passes
 
 
-def ball_state_update(pos_lst: list, lastframe) -> List[Tuple[int, int, BallState]]:
+def ball_state_update(pos_lst: list, lastframe) -> List[Tuple[int, int, BallType]]:
     """
     Reads in a possession list and the last frame of the game
     Returns: List[frame1, frame2, BallState] that partitions each interval of
@@ -116,17 +146,17 @@ def ball_state_update(pos_lst: list, lastframe) -> List[Tuple[int, int, BallStat
     # [(start_frame, end_frame, BallState)]
     ball_state = []
     if pos_lst[0][1] != 0:
-        ball_state.append((0, pos_lst[0][1]-1, BallState.OUT_OF_PLAY))
+        ball_state.append((0, pos_lst[0][1]-1, BallType.OUT_OF_PLAY))
     ball_state.append(
-        (pos_lst[0][1], pos_lst[0][2], BallState.IN_POSSESSION))
+        (pos_lst[0][1], pos_lst[0][2], BallType.IN_POSSESSION))
     curr_frame = pos_lst[0][2]+1
     for i in range(1, len(pos_lst)):
         ball_state.append(
-            (curr_frame, pos_lst[i][1]-1, BallState.IN_TRANSITION))
+            (curr_frame, pos_lst[i][1]-1, BallType.IN_TRANSITION))
         ball_state.append(
-            (pos_lst[i][1], pos_lst[i][2], BallState.IN_POSSESSION))
+            (pos_lst[i][1], pos_lst[i][2], BallType.IN_POSSESSION))
         curr_frame = pos_lst[i][2]+1
-    ball_state.append((curr_frame, lastframe, BallState.OUT_OF_PLAY))
+    ball_state.append((curr_frame, lastframe, BallType.OUT_OF_PLAY))
     return ball_state
 
 

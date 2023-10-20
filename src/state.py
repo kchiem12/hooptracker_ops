@@ -11,42 +11,84 @@ class ShotType(Enum):
 
 class ShotAttempt:
     """
-    A single shot attempt
-    """
-    def __init__(self, start:int, end:int) -> None:
-        """
-        Initializes shot attempt containing
+    A single shot attempt containing
         start: first frame
         end: last frame
         playerid: shot's player
         type: MISSED, TWO, or THREE
+    """
+    def __init__(self, start:int, end:int) -> None:
+        """
+        Initializes shot attempt containing
+        
         """
         #IMMUTABLE
         self.start : int = start
+        "first frame"
         self.end : int = end
+        "last frame"
 
         #MUTABLE
         self.playerid : int = None
+        "shot's player"
         self.type : ShotType = None
+        "MISSED, TWO, or THREE"
     
     def check(self) -> bool:
         "verifies if well-defined"
         try:
             assert (self.start <= self.end)
-            assert (self.start != None and self.end != None
-                    and self.playerid != None and self.type != None)
+            assert (self.start is not None and self.end is not None
+                    and self.playerid is not None and self.type is not None)
         except:
             return False
         return True
 
 
-class BallState(Enum):
+class BallType(Enum):
     """
     Indicates the status of the ball at any given frame.
     """
     IN_POSSESSION = 1  # hold/dribble
     IN_TRANSITION = 2  # pass/shot
     OUT_OF_PLAY = 3  # out of bounds, just after shot, etc.
+
+class BallState:
+    """
+    Ball state containing
+        xmin, ymin, xmax, ymax of bounding box
+        playerid: of last posession
+        type: IN_POCESSION, IN_TRANSITION, or OUT_OF_PLAY
+    """
+    def __init__(self, xmin:int, ymin:int, xmax:int, ymax:int) -> None:
+        """
+        Initializes shot attempt containing
+        """
+        #IMMUTABLE
+        self.xmin:int = xmin
+        self.ymin:int = ymin
+        self.xmax:int = xmax
+        self.ymax:int = ymax
+
+        #MUTABLE
+        self.playerid : int = None
+        "last player in possession"
+        self.type : BallType = None
+        "IN_POCESSION, IN_TRANSITION, or OUT_OF_PLAY"
+    
+    def check(self) -> bool:
+        "verifies if well-defined"
+        try:
+            assert (self.xmin <= self.xmax and self.ymin <= self.ymax)
+            assert (self.xmin is not None and
+                    self.ymin is not None and
+                    self.xmax is not None and
+                    self.ymax is not None and
+                    self.playerid is not None and
+                    self.type is not None)
+        except:
+            return False
+        return True
 
 
 class GameState:
@@ -71,9 +113,10 @@ class GameState:
         self.backboard = None
 
         # MUTABLE
-        # [{'frameno': #, 'ball': {xmin, xmax, ymin, ymax}, 'playerid'...}]
+        # [{'frameno': #, 'players': {'player[id]' : xmin, ymin, xmax, ymax}, 'balls': {'ball[id]' : BallState }}]
         self.states = None
-        # [(start_frame, end_frame, TODO something)]
+
+
         self.possession_list = None
         # {'playerid': {'shots': 0, "points": 0, "rebounds": 0, "assists": 0}}
         self.players = {}
