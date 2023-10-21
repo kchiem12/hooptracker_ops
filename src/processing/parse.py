@@ -41,15 +41,49 @@ def parse_sort_output(state: GameState, sort_output) -> None:
         sF: Frame = sts[s]  # frame to be updated DO NOT DELETE LINE
         assert sF.frameno == frame
         if obj_type is ObjectType.BALL.value:
-            bs = BallState(xmin, ymin, xmax=xmin + xwidth, ymax=ymin + ywidth)
+            bs = BallFrame(xmin, ymin, xmax=xmin + xwidth, ymax=ymin + ywidth)
             id = "ball_" + id
             sF.balls.update({id: bs})
+            if id not in state.balls:  # if new ball
+                state.balls.update({id: BallState()})
+            bs: BallState = state.balls.get(id)
+            bs.frames += 1
         elif obj_type is ObjectType.PLAYER.value:
-            ps = PlayerState(xmin, ymin, xmax=xmin + xwidth, ymax=ymin + ywidth)
+            pf = PlayerFrame(xmin, ymin, xmax=xmin + xwidth, ymax=ymin + ywidth)
             id = "player_" + id
-            sF.players.update({id: ps})
+            sF.players.update({id: pf})
+            if id not in state.players:  # if new player
+                state.players.update({id: PlayerState()})
+            ps: PlayerState = state.players.get(id)
+            ps.frames += 1
         elif obj_type is ObjectType.RIM.value:
             box = Box(xmin, ymin, xmax=xmin + xwidth, ymax=ymin + ywidth)
             sF.rim = box
 
         b += 1  # process next line
+
+
+def filter_players(state: GameState, threshold: int) -> None:
+    "removes all players which appear for less than [threshold] frames"
+    for k in state.players:
+        v: PlayerState = state.players.get(k)
+        if v.frames < threshold:
+            state.players.pop(k)
+
+
+def filter_balls(state: GameState, threshold: int) -> None:
+    "removes all balls which appear for less than [threshold] frames"
+    for k in state.balls:
+        v: BallState = state.balls.get(k)
+        if v.frames < threshold:
+            state.balls.pop(k)
+
+
+def clean(state: GameState, pframe_threshold: int, bframe_threshold: int):
+    """
+    Imputes missing data and filters outs noise after parsing
+        pframe_threshold: min frames a player should appear for in video
+        bframe_threshold: max frames a player should appear for in video
+    """
+    filter_players(state, pframe_threshold)
+    filter_balls(state, bframe_threshold)

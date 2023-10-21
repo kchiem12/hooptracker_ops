@@ -120,7 +120,7 @@ class BallType(Enum):
     OUT_OF_PLAY = 3  # out of bounds, just after shot, etc.
 
 
-class BallState:
+class BallFrame:
     """
     Ball state containing
         box: bounding box
@@ -157,7 +157,7 @@ class ActionType(Enum):
     SHOOT = 3
 
 
-class PlayerState:
+class PlayerFrame:
     """
     Player state containing
         box: bounding box
@@ -206,9 +206,9 @@ class Frame:
 
         # MUTABLE
         self.players: dict = {}  # ASSUMPTION: MULITPLE PEOPLE
-        "dictionary of form {player[id] : PlayerState}"
+        "dictionary of form {player_[id] : PlayerFrame}"
         self.balls: dict = {}  # ASSUMPTION: MULITPLE BALLS
-        "dictionary of form {ball[id] : BallState}"
+        "dictionary of form {ball_[id] : BallFrame}"
         self.rim: Box = None  # ASSUMPTION: SINGLE RIM
         "bounding box of rim"
 
@@ -226,6 +226,32 @@ class Frame:
         return True
 
 
+class PlayerState:
+    "State object containing player information throughout whole game"
+
+    def __init__(self) -> None:
+        """
+        Player state containing
+            frames: number frames player appeared in
+
+        """
+        # MUTABLE
+        self.frames: int = 0
+
+
+class BallState:
+    "State object containing ball information throughout whole game"
+
+    def __init__(self) -> None:
+        """
+        Ball state containing
+            frames: number frames player appeared in
+
+        """
+        # MUTABLE
+        self.frames: int = 0
+
+
 class GameState:
     """
     State class holding: player positions, ball position, and team scores
@@ -235,6 +261,8 @@ class GameState:
         """
         Initialises state; contains the following instance variables:
             states: list of dictionaries with info at each frame
+            players: dictionary of players to PlayerState
+            balls: dictioanry of balls to BallState
             possession_list: list of ball possession tuples
             passes: dictionary of passes with their start and end frames and players involved
             possession: dictionary of players with their possessions as list of frame tuples
@@ -246,11 +274,17 @@ class GameState:
 
         self.states: list = []
         "list of frames: [Frame], each frame has player, ball, and rim info"
+        self.players: dict = {}
+        "{player_0 : PlayerState, player_1 : PlayerState}"
+        self.balls: dict = {}
+        "{ball_0 : BallState, ball_1 : BallState}"
+
+        # EVERYTHING BELOW THIS POINT IS OUT-OF-DATE
 
         self.possession_list = None
         # {'playerid': {'shots': 0, "points": 0, "rebounds": 0, "assists": 0}}
-        self.players = {}
-        # [(start_frame, end_frame, BallState)]
+
+        # [(start_frame, end_frame, BallFrame)]
         self.ball_state = None
         # {'pass_id': {'frames': (start_frame, end_frame)}, 'players':(p1_id, p2_id)}}
         self.passes = None
@@ -264,6 +298,7 @@ class GameState:
         self.score2 = 0
         self.team1_pos = 0
         self.team2_pos = 0
+
 
     def update_scores(self, madeshot_list):
         """
