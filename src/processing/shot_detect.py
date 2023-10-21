@@ -1,39 +1,8 @@
 from typing import List, Tuple
 from state import GameState, ShotAttempt, ShotType
 
-
-def new_rim(file_path):
-    """
-    TODO is this function used?
-    Accepts a strongsort text file path as an input, and outputs the coordinates
-    of the original rim and the new box above it. Assumption: the coordinates of
-    the rim do not move (constant) throughout the video.
-    """
-    # Initialize values
-    left = 0
-    top = 0
-    width = 0
-    height = 0
-    with open(file_path, 'r') as file:
-        lines = file.readlines()
-        for line in lines:
-            # Convert each text file line into an int list
-            lst = [int(i) for i in line.split()]
-
-            # Rim index = 2
-            if lst[1] == 2:
-                left = lst[3]
-                top = lst[4]
-                width = lst[5]
-                height = lst[6]
-
-    # The top_box is simply a height above the rim_box
-    top_box = left, top+height, width, height
-    rim_box = left, top, width, height
-    return top_box, rim_box
-
-
-def madeshot(state:GameState) -> List[Tuple[int, int]]:
+# TODO revamp this method using new ball states
+def madeshot(state:GameState, start:int, end:int) -> List[Tuple[int, int]]:
     """
     Accepts a strongsort text file path as an input, and outputs the frame
     intervals in which a shot was made. Ex: If a shot was made between the
