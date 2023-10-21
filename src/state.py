@@ -86,8 +86,6 @@ class ShotAttempt:
         "last frame"
 
         # MUTABLE
-        self.playerid: int = None
-        "shot's player"
         self.type: ShotType = None
         "MISSED, TWO, or THREE"
 
@@ -102,7 +100,6 @@ class ShotAttempt:
             assert (
                 self.start is not None
                 and self.end is not None
-                and self.playerid is not None
                 and self.type is not None
             )
         except:
@@ -274,10 +271,14 @@ class GameState:
 
         self.states: list = []
         "list of frames: [Frame], each frame has player, ball, and rim info"
+
         self.players: dict = {}
-        "{player_0 : PlayerState, player_1 : PlayerState}"
+        "Global player data: {player_0 : PlayerState, player_1 : PlayerState}"
+
         self.balls: dict = {}
         "{ball_0 : BallState, ball_1 : BallState}"
+
+        self.shots
 
         # EVERYTHING BELOW THIS POINT IS OUT-OF-DATE
 
@@ -313,20 +314,20 @@ class GameState:
             Updates self.score1, self.score2.
         """
         madeshots = []
-        madeshot_lst = []
+        mdsh_lst = []
         # Set counter to first made shot (where madeshot_list[counter][1] != 0)
         counter = 0
         for shot in madeshot_list:
             if shot[1] != 0:
-                madeshot_lst.append(shot)
+                mdsh_lst.append(shot)
 
         # Iterate through possession list and find who made the shot
         # TODO what if madeshot_lst is empty?
         for pos in self.possession_list:
-            if pos[2] >= madeshot_lst[counter][0]:
-                madeshots.append((pos[0], madeshot_lst[counter][0]))
+            if pos[2] >= mdsh_lst[counter][0]:
+                madeshots.append((pos[0], mdsh_lst[counter][0]))
                 counter += 1
-                if counter >= len(madeshot_lst):
+                if counter >= len(mdsh_lst):
                     break
         # For each shot made update the player's and team's score
         for shot in madeshots:
