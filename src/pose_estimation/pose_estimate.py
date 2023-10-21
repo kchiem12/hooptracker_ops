@@ -1,7 +1,7 @@
 import torch
 import math
 import json
-from ultralytics import YOLO  # Ensure ultralytics is installed and configured
+from ultralytics import YOLO
 
 
 class KeyPointNames:
@@ -81,7 +81,7 @@ class PoseEstimator:
         vector_b = vector_b / torch.norm(vector_b)
 
         # Compute the angle
-        cosine_angle = torch.dot(vector_a, vector_b)
+        cosine_angle = torch.sum(vector_a * vector_b)
         angle_radians = torch.acos(cosine_angle)
         angle_degrees = angle_radians * 180 / math.pi
 
