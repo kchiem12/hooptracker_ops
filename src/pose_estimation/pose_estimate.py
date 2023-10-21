@@ -4,7 +4,7 @@ import json
 from ultralytics import YOLO
 
 class PoseEstimator:
-    def __init__(self, model_path='best.pt', video_path='res/pose_results/test_multiple_people.mp4', combinations=None):
+    def __init__(self, model_path='src/pose_estimation/best.pt', video_path='res/pose_results/test_multiple_people.mp4', combinations=None):
         # Initialize paths, model, and combinations of keypoints to calculate angles
         self.model_path = model_path
         self.video_path = video_path

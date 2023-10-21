@@ -55,7 +55,7 @@ class ModelRunner:
             self.output_dict = pickle.load(f)
 
     def pose(self):
-        model = YOLO('best.pt')
+        model = YOLO('src/pose_estimation/best.pt')
         results = model(
             source = self.video_path,
             show=False,
