@@ -3,6 +3,7 @@ Module containing state of game statistics
 """
 from enum import Enum
 
+
 # maintains dictionary functionality, if desired:
 def todict(obj):
     "to dictionary, recursively"
@@ -14,49 +15,56 @@ def todict(obj):
             data[key] = value
     return data
 
+
+# of importance for SORT object type enumerating
 class ObjectType(Enum):
     "type of object detected in object tracking"
     BALL = 0
     PLAYER = 1
     RIM = 2
 
+
 class Box:
     """
     Bounding box containing
         xmin, ymin, xmax, ymax of bounding box
     """
-    def __init__(self, xmin:int, ymin:int, xmax:int, ymax:int) -> None:
+
+    def __init__(self, xmin: int, ymin: int, xmax: int, ymax: int) -> None:
         """
         Initializes bounding box
         """
-        #IMMUTABLE
-        self.xmin:int = xmin
-        self.ymin:int = ymin
-        self.xmax:int = xmax
-        self.ymax:int = ymax
-    
-    def inbounds(self,x:int,y:int) -> bool:
+        # IMMUTABLE
+        self.xmin: int = xmin
+        self.ymin: int = ymin
+        self.xmax: int = xmax
+        self.ymax: int = ymax
+
+    def inbounds(self, x: int, y: int) -> bool:
         "if (x,y) within bounding box"
-        return (x >= self.xmin and x <= self.xmax and
-                y >= self.ymin and y <= self.ymax)
-    
+        return x >= self.xmin and x <= self.xmax and y >= self.ymin and y <= self.ymax
+
     def check(self) -> bool:
         "verifies if well-defined"
         try:
-            assert (self.xmin <= self.xmax and self.ymin <= self.ymax)
-            assert (self.xmin is not None and
-                    self.ymin is not None and
-                    self.xmax is not None and
-                    self.ymax is not None)
+            assert self.xmin <= self.xmax and self.ymin <= self.ymax
+            assert (
+                self.xmin is not None
+                and self.ymin is not None
+                and self.xmax is not None
+                and self.ymax is not None
+            )
         except:
             return False
         return True
 
+
 class ShotType(Enum):
-        "Status of shot, paired with point value"
-        MISS = 0
-        TWO = 2
-        THREE = 3
+    "Status of shot, paired with point value"
+    MISS = 0
+    TWO = 2
+    THREE = 3
+
 
 class ShotAttempt:
     """
@@ -67,42 +75,50 @@ class ShotAttempt:
         playerid: shot's player
         type: MISSED, TWO, or THREE
     """
-    def __init__(self, ballid:int, start:int, end:int) -> None:
-        #IMMUTABLE
-        self.ballid : int = ballid
+
+    def __init__(self, ballid: int, start: int, end: int) -> None:
+        # IMMUTABLE
+        self.ballid: int = ballid
         "ball's id"
-        self.start : int = start
+        self.start: int = start
         "first frame"
-        self.end : int = end
+        self.end: int = end
         "last frame"
 
-        #MUTABLE
-        self.playerid : int = None
+        # MUTABLE
+        self.playerid: int = None
         "shot's player"
-        self.type : ShotType = None
+        self.type: ShotType = None
         "MISSED, TWO, or THREE"
 
     def value(self) -> int:
         "point value of shot attempt"
         return self.type.value
-    
+
     def check(self) -> bool:
         "verifies if well-defined"
         try:
-            assert (self.start <= self.end)
-            assert (self.start is not None and self.end is not None
-                    and self.playerid is not None and self.type is not None)
+            assert self.start <= self.end
+            assert (
+                self.start is not None
+                and self.end is not None
+                and self.playerid is not None
+                and self.type is not None
+            )
         except:
             return False
         return True
+
 
 class BallType(Enum):
     """
     Indicates the status of the ball at any given frame.
     """
+
     IN_POSSESSION = 1  # hold/dribble
     IN_TRANSITION = 2  # pass/shot
     OUT_OF_PLAY = 3  # out of bounds, just after shot, etc.
+
 
 class BallState:
     """
@@ -111,33 +127,35 @@ class BallState:
         playerid: of last posession
         type: IN_POCESSION, IN_TRANSITION, or OUT_OF_PLAY
     """
-    def __init__(self, xmin:int, ymin:int, xmax:int, ymax:int) -> None:
-        #IMMUTABLE
-        self.box:Box = Box(xmin,ymin,xmax,ymax)
+
+    def __init__(self, xmin: int, ymin: int, xmax: int, ymax: int) -> None:
+        # IMMUTABLE
+        self.box: Box = Box(xmin, ymin, xmax, ymax)
         "bounding box"
 
-        #MUTABLE
-        self.playerid : int = None
+        # MUTABLE
+        self.playerid: int = None
         "last player in possession"
-        self.type : BallType = None
+        self.type: BallType = None
         "IN_POCESSION, IN_TRANSITION, or OUT_OF_PLAY"
-    
+
     def check(self) -> bool:
         "verifies if well-defined"
         try:
-            assert (self.box.check() is True)
-            assert (self.playerid is not None and
-                    self.type is not None)
+            assert self.box.check() is True
+            assert self.playerid is not None and self.type is not None
         except:
             return False
         return True
-    
-class ActionType(Enum): 
+
+
+class ActionType(Enum):
     "player actions type"
-    NOTHING = 0 #assumption: NOTHING is only action not with ball
+    NOTHING = 0  # assumption: NOTHING is only action not with ball
     DRIBBLE = 1
     PASS = 2
     SHOOT = 3
+
 
 class PlayerState:
     """
@@ -146,22 +164,23 @@ class PlayerState:
         playerid: of last posession
         type: NOTHING, DRIBBLE, PASS, SHOOT
     """
-    def __init__(self, xmin:int, ymin:int, xmax:int, ymax:int) -> None:
-        #IMMUTABLE
-        self.box:Box = Box(xmin,ymin,xmax,ymax)
+
+    def __init__(self, xmin: int, ymin: int, xmax: int, ymax: int) -> None:
+        # IMMUTABLE
+        self.box: Box = Box(xmin, ymin, xmax, ymax)
         "bounding box"
 
-        #MUTABLE
-        self.ballid : int = -1
+        # MUTABLE
+        self.ballid: int = -1
         "ball in possession (-1) if not in possession"
-        self.type : ActionType = None
+        self.type: ActionType = None
         "NOTHING, DRIBBLE, PASS, SHOOT"
-    
+
     def check(self) -> bool:
         "verifies if well-defined"
         try:
-            assert (self.box.check() is True)
-            assert (self.type is not None)
+            assert self.box.check() is True
+            assert self.type is not None
             if self.type is ActionType.NOTHING:
                 assert self.ballid == -1
             else:
@@ -170,27 +189,38 @@ class PlayerState:
             return False
         return True
 
+
 class Frame:
     """
     Frame containing
+        frameno: frame number
         players: dictionary of players info during frame
         balls: dictionary of balls info during frame
+        rim: bounding box of rim
     """
-    def __init__(self) -> None:
-        """
-        Initializes frame e containing
-        """
-        #MUTABLE
-        self.players = {}
+
+    def __init__(self, frameno: int) -> None:
+        # IMMUTABLE
+        self.frameno: int = frameno
+        "frame number, Required: non-negative integer"
+
+        # MUTABLE
+        self.players: dict = {}  # ASSUMPTION: MULITPLE PEOPLE
         "dictionary of form {player[id] : PlayerState}"
-        self.balls = {}
+        self.balls: dict = {}  # ASSUMPTION: MULITPLE BALLS
         "dictionary of form {ball[id] : BallState}"
-    
+        self.rim: Box = None  # ASSUMPTION: SINGLE RIM
+        "bounding box of rim"
+
     def check(self) -> bool:
         "verifies if well-defined"
         try:
-            assert (self.players is not None and
-                    self.balls is not None)
+            assert (
+                self.frameno is not None
+                and self.players is not None
+                and self.balls is not None
+                and self.rim is not None
+            )
         except:
             return False
         return True
@@ -200,10 +230,10 @@ class GameState:
     """
     State class holding: player positions, ball position, and team scores
     """
+
     def __init__(self) -> None:
         """
         Initialises state; contains the following instance variables:
-            rim: rim position
             states: list of dictionaries with info at each frame
             possession_list: list of ball possession tuples
             passes: dictionary of passes with their start and end frames and players involved
@@ -213,11 +243,9 @@ class GameState:
             team1_pos, team2_pos: percentage of possession for each team
         """
         # MUTABLE
-    
-        self.states : dict = {}
-        'state: dictionary of {frame[#] : Frame}'
 
-        self.rim : Box = None
+        self.states: list = []
+        "list of frames: [Frame], each frame has player, ball, and rim info"
 
         self.possession_list = None
         # {'playerid': {'shots': 0, "points": 0, "rebounds": 0, "assists": 0}}
@@ -236,7 +264,6 @@ class GameState:
         self.score2 = 0
         self.team1_pos = 0
         self.team2_pos = 0
-
 
     def update_scores(self, madeshot_list):
         """
@@ -268,28 +295,29 @@ class GameState:
                     break
         # For each shot made update the player's and team's score
         for shot in madeshots:
-            self.players[shot[0]]['shots'] += 1
-            self.players[shot[0]]['points'] += 2
+            self.players[shot[0]]["shots"] += 1
+            self.players[shot[0]]["points"] += 2
             if shot[0] in self.team1:
                 self.score1 += 2
             else:
                 self.score2 += 2
 
-
     def __repr__(self) -> str:
         result_dict = {
-        "Rim coordinates": str(self.rim) if len(self.rim) > 0 else "None",
-        "Backboard coordinates": str(self.backboard) if len(self.rim) > 0 else "None",
-        "Court lines coordinates": "None",
-        "Number of frames": str(len(self.states)),
-        "Number of players": str(len(self.players)),
-        "Number of passes": str(len(self.passes)),
-        "Team 1": str(self.team1),
-        "Team 2": str(self.team2),
-        "Team 1 Score": str(self.score1),
-        "Team 2 Score": str(self.score2),
-        "Team 1 Possession": str(self.team1_pos),
-        "Team 2 Possession": str(self.team2_pos)
+            "Rim coordinates": str(self.rim) if len(self.rim) > 0 else "None",
+            "Backboard coordinates": str(self.backboard)
+            if len(self.rim) > 0
+            else "None",
+            "Court lines coordinates": "None",
+            "Number of frames": str(len(self.states)),
+            "Number of players": str(len(self.players)),
+            "Number of passes": str(len(self.passes)),
+            "Team 1": str(self.team1),
+            "Team 2": str(self.team2),
+            "Team 1 Score": str(self.score1),
+            "Team 2 Score": str(self.score2),
+            "Team 1 Possession": str(self.team1_pos),
+            "Team 2 Possession": str(self.team2_pos),
         }
         for player in self.players:
             result_dict[player] = str(self.players[player])
