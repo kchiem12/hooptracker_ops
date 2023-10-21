@@ -41,9 +41,10 @@ def parse_sort_output(state: GameState, sort_output) -> None:
         sF: Frame = sts[s]  # frame to be updated DO NOT DELETE LINE
         assert sF.frameno == frame
         if obj_type is ObjectType.BALL.value:
-            bs = BallFrame(xmin, ymin, xmax=xmin + xwidth, ymax=ymin + ywidth)
+            bf = BallFrame(xmin, ymin, xmax=xmin + xwidth, ymax=ymin + ywidth)
+            sF.ball = bf
             id = "ball_" + id
-            sF.balls.update({id: bs})
+            sF.balls.update({id: bf})
             if id not in state.balls:  # if new ball
                 state.balls.update({id: BallState()})
             bs: BallState = state.balls.get(id)
