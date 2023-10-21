@@ -7,6 +7,7 @@ import pickle
 import subprocess
 from typing import Tuple
 from pose_estimation.pose_estimate import PoseEstimator
+from ultralytics import YOLO
 
 class ModelRunner:
     """
@@ -52,7 +53,16 @@ class ModelRunner:
         # subprocess.run(['bash', 'src/StrongSORT-YOLO/run_tracker.sh'])
         with open('tmp/output.pickle', 'rb') as f:
             self.output_dict = pickle.load(f)
-        self.pose_estimator.estimate_pose()
+
+    def pose(self):
+        model = YOLO('best.pt')
+        results = model(
+            source = self.video_path,
+            show=False,
+            conf=0.3,
+            verbose = False
+        )
+        self.pose_estimator.estimate_pose(results = results)
 
     def fetch_output(self) -> Tuple[str, str, str]:
         """

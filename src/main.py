@@ -36,6 +36,7 @@ def main(video_path):
 
     modelrunner = ModelRunner(video_path, model_vars)
     modelrunner.run()
+    modelrunner.pose()
     people_output, ball_output, pose_output = modelrunner.fetch_output()
     output_video_path = 'tmp/court_video.mp4'
     output_video_path_reenc = 'tmp/court_video_reenc.mp4'
