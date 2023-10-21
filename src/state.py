@@ -204,6 +204,7 @@ class Frame:
         # MUTABLE
         self.players: dict = {}  # ASSUMPTION: MULITPLE PEOPLE
         "dictionary of form {player_[id] : PlayerFrame}"
+        self.ball: BallFrame = None  # ASSUMPTION: SINGLE BALL
         self.balls: dict = {}  # ASSUMPTION: MULITPLE BALLS
         "dictionary of form {ball_[id] : BallFrame}"
         self.rim: Box = None  # ASSUMPTION: SINGLE RIM

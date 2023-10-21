@@ -1,5 +1,5 @@
 from typing import List, Tuple
-from state import GameState, ShotAttempt, ShotType
+from state import GameState, ShotAttempt, ShotType, Box
 
 # TODO revamp this method using new ball states
 def madeshot(state:GameState, start:int, end:int) -> List[Tuple[int, int]]:
@@ -9,7 +9,6 @@ def madeshot(state:GameState, start:int, end:int) -> List[Tuple[int, int]]:
     frames 0 and 10, the output of madeshot() will be [(0, 10)].
     """
     # Initialize values
-    rim = state.rim 
     shots_made = []
     passed_top = False
     passed_rim = False
@@ -17,6 +16,56 @@ def madeshot(state:GameState, start:int, end:int) -> List[Tuple[int, int]]:
     top_collision_end = 0
     rim_collision_start = 0
     rim_collision_end = 0
+
+    for frame in state.states[start:end]:
+        rim: Box = frame.rim
+        # ball index = 0
+        if frame.ball is not None:
+            # Take the center coordinates of the ball
+            ball_x = (frame.ball.box.xmin + frame.ball.box.xmax)/2
+            ball_y = (frame.ball.box.ymin + frame.ball.box.ymax)/2
+            # check to see if ball is in top box
+            in_top_x = (ball_x >= rim.xmin and ball_x <= rim.xmin + rim.xmax)
+            in_top_y = (ball_y <= rim.ymin and ball_y >= rim.ymin - rim.ymax)
+            if not passed_top:
+                if in_top_x and in_top_y and (frame.frameno not in
+                                              range(top_collision_start,
+                                                    top_collision_end)):
+                    top_collision_start = frame.frameno
+                    passed_top = True
+            else:
+                if not in_top_x or not in_top_y:
+                    top_collision_end = frame.frameno
+
+            #check to see if ball is in rim box
+            in_rim_x = (ball_x >= rim.xmin and ball_x <= rim.xmin + rim.xmax)
+            in_rim_y = (ball_y <= rim.ymin and ball_y >= rim.ymin - rim.ymax)
+            if not passed_rim:
+                if in_rim_x and in_rim_y and (frame.frameno not in
+                                              range(rim_collision_start,
+                                                    rim_collision_end)):
+                    rim_collision_start = frame.frameno
+                    passed_rim = True
+            else:
+                if not in_rim_x or not in_rim_y:
+                    rim_collision_end = frame.frameno
+            # if the ball has passed both the top and the rim box, then
+            # a shot has been made, and is added to the shots_made list
+            if passed_top and passed_rim:
+                shots_made.append((top_collision_start, rim_collision_end))
+
+                # Reset all the values
+                passed_top = False
+                passed_rim = False
+                top_collision_start = 0
+                top_collision_end = 0
+                rim_collision_start = 0
+                rim_collision_end = 0
+            
+    return shots_made
+
+
+    # old code
     with open(file_path, 'r') as f:
         lines = f.readlines()
         for line in lines:
@@ -76,5 +125,4 @@ def madeshot(state:GameState, start:int, end:int) -> List[Tuple[int, int]]:
     return [(131, 131), (132, 0), (629, 629), (630, 0), (1244, 0), (1561, 1561), (1562, 0)]
 
 if __name__ == '__main__':
-    print(new_rim('tmp/people.txt'))
     print(madeshot('tmp/people.txt'))
