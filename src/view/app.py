@@ -90,6 +90,7 @@ def results_page():
         # Results
         These are the results. Here's the processed video and a minimap of the player positions.
     ''')
+    process_data = fetch_result_string()
     st.video(open(fetch_result_video(), 'rb').read())
 
     st.markdown('## Statistics')
@@ -97,7 +98,7 @@ def results_page():
     st.download_button(
         label='Download Results',
         use_container_width=True,
-        data=fetch_result_string(),
+        data=process_data,
         file_name="results.txt"
     )
 
