@@ -3,6 +3,55 @@ Module containing state of game statistics
 """
 from enum import Enum
 
+# maintains dictionary functionality, if desired:
+def todict(obj):
+    "to dictionary, recursively"
+    data = {}
+    for key, value in obj.__dict__.items():
+        try:
+            data[key] = todict(value)
+        except AttributeError:
+            data[key] = value
+    return data
+
+class ObjectType(Enum):
+    "type of object detected in object tracking"
+    BALL = 0
+    PLAYER = 1
+    RIM = 2
+
+class Box:
+    """
+    Bounding box containing
+        xmin, ymin, xmax, ymax of bounding box
+    """
+    def __init__(self, xmin:int, ymin:int, xmax:int, ymax:int) -> None:
+        """
+        Initializes bounding box
+        """
+        #IMMUTABLE
+        self.xmin:int = xmin
+        self.ymin:int = ymin
+        self.xmax:int = xmax
+        self.ymax:int = ymax
+    
+    def inbounds(self,x:int,y:int) -> bool:
+        "if (x,y) within bounding box"
+        return (x >= self.xmin and x <= self.xmax and
+                y >= self.ymin and y <= self.ymax)
+    
+    def check(self) -> bool:
+        "verifies if well-defined"
+        try:
+            assert (self.xmin <= self.xmax and self.ymin <= self.ymax)
+            assert (self.xmin is not None and
+                    self.ymin is not None and
+                    self.xmax is not None and
+                    self.ymax is not None)
+        except:
+            return False
+        return True
+
 class ShotType(Enum):
         "Status of shot, paired with point value"
         MISS = 0
@@ -12,17 +61,16 @@ class ShotType(Enum):
 class ShotAttempt:
     """
     A single shot attempt containing
+        ballid: ball's id
         start: first frame
         end: last frame
         playerid: shot's player
         type: MISSED, TWO, or THREE
     """
-    def __init__(self, start:int, end:int) -> None:
-        """
-        Initializes shot attempt containing
-        
-        """
+    def __init__(self, ballid:int, start:int, end:int) -> None:
         #IMMUTABLE
+        self.ballid : int = ballid
+        "ball's id"
         self.start : int = start
         "first frame"
         self.end : int = end
@@ -33,6 +81,10 @@ class ShotAttempt:
         "shot's player"
         self.type : ShotType = None
         "MISSED, TWO, or THREE"
+
+    def value(self) -> int:
+        "point value of shot attempt"
+        return self.type.value
     
     def check(self) -> bool:
         "verifies if well-defined"
@@ -43,7 +95,6 @@ class ShotAttempt:
         except:
             return False
         return True
-
 
 class BallType(Enum):
     """
@@ -56,19 +107,14 @@ class BallType(Enum):
 class BallState:
     """
     Ball state containing
-        xmin, ymin, xmax, ymax of bounding box
+        box: bounding box
         playerid: of last posession
         type: IN_POCESSION, IN_TRANSITION, or OUT_OF_PLAY
     """
     def __init__(self, xmin:int, ymin:int, xmax:int, ymax:int) -> None:
-        """
-        Initializes shot attempt containing
-        """
         #IMMUTABLE
-        self.xmin:int = xmin
-        self.ymin:int = ymin
-        self.xmax:int = xmax
-        self.ymax:int = ymax
+        self.box:Box = Box(xmin,ymin,xmax,ymax)
+        "bounding box"
 
         #MUTABLE
         self.playerid : int = None
@@ -79,13 +125,72 @@ class BallState:
     def check(self) -> bool:
         "verifies if well-defined"
         try:
-            assert (self.xmin <= self.xmax and self.ymin <= self.ymax)
-            assert (self.xmin is not None and
-                    self.ymin is not None and
-                    self.xmax is not None and
-                    self.ymax is not None and
-                    self.playerid is not None and
+            assert (self.box.check() is True)
+            assert (self.playerid is not None and
                     self.type is not None)
+        except:
+            return False
+        return True
+    
+class ActionType(Enum): 
+    "player actions type"
+    NOTHING = 0 #assumption: NOTHING is only action not with ball
+    DRIBBLE = 1
+    PASS = 2
+    SHOOT = 3
+
+class PlayerState:
+    """
+    Player state containing
+        box: bounding box
+        playerid: of last posession
+        type: NOTHING, DRIBBLE, PASS, SHOOT
+    """
+    def __init__(self, xmin:int, ymin:int, xmax:int, ymax:int) -> None:
+        #IMMUTABLE
+        self.box:Box = Box(xmin,ymin,xmax,ymax)
+        "bounding box"
+
+        #MUTABLE
+        self.ballid : int = -1
+        "ball in possession (-1) if not in possession"
+        self.type : ActionType = None
+        "NOTHING, DRIBBLE, PASS, SHOOT"
+    
+    def check(self) -> bool:
+        "verifies if well-defined"
+        try:
+            assert (self.box.check() is True)
+            assert (self.type is not None)
+            if self.type is ActionType.NOTHING:
+                assert self.ballid == -1
+            else:
+                assert self.ballid != -1
+        except:
+            return False
+        return True
+
+class Frame:
+    """
+    Frame containing
+        players: dictionary of players info during frame
+        balls: dictionary of balls info during frame
+    """
+    def __init__(self) -> None:
+        """
+        Initializes frame e containing
+        """
+        #MUTABLE
+        self.players = {}
+        "dictionary of form {player[id] : PlayerState}"
+        self.balls = {}
+        "dictionary of form {ball[id] : BallState}"
+    
+    def check(self) -> bool:
+        "verifies if well-defined"
+        try:
+            assert (self.players is not None and
+                    self.balls is not None)
         except:
             return False
         return True
@@ -98,24 +203,21 @@ class GameState:
     def __init__(self) -> None:
         """
         Initialises state; contains the following instance variables:
-        rim: rim position
-        backboard: backboard position TODO
-        states: list of dictionaries with info at each frame
-        possession_list: list of ball possession tuples
-        passes: dictionary of passes with their start and end frames and players involved
-        possession: dictionary of players with their possessions as list of frame tuples
-        team1, team2: list of players on each team
-        score1, score2: score of each team
-        team1_pos, team2_pos: percentage of possession for each team
+            rim: rim position
+            states: list of dictionaries with info at each frame
+            possession_list: list of ball possession tuples
+            passes: dictionary of passes with their start and end frames and players involved
+            possession: dictionary of players with their possessions as list of frame tuples
+            team1, team2: list of players on each team
+            score1, score2: score of each team
+            team1_pos, team2_pos: percentage of possession for each team
         """
-        # IMMUTABLE
-        self.rim = None
-        self.backboard = None
-
         # MUTABLE
-        # [{'frameno': #, 'players': {'player[id]' : xmin, ymin, xmax, ymax}, 'balls': {'ball[id]' : BallState }}]
-        self.states = None
+    
+        self.states : dict = {}
+        'state: dictionary of {frame[#] : Frame}'
 
+        self.rim : Box = None
 
         self.possession_list = None
         # {'playerid': {'shots': 0, "points": 0, "rebounds": 0, "assists": 0}}
