@@ -60,7 +60,6 @@ class ProcessRunner:
         """Runs courtline detection."""
         court = courtline_detect.Render(self.video_path)
         self.homography = court.get_homography()
-        # court.render_video(self.state.states, self.state.players, self.output_video_path)
 
 
     def run_video_render(self):

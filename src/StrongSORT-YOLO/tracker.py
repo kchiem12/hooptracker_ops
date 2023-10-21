@@ -1,4 +1,6 @@
 from pathlib import Path
+import sys
+import os
 import track_v5
 import pickle
 
@@ -24,13 +26,11 @@ def get_data(source_mov:str):
     return {'basketball_data': (out_array_bb, bb_vid_path), 'person_data': (out_array_pr, vid_path)}
 
 
-def test():
-    print('import worked')
-
 if __name__ == '__main__':
-    # TODO change to actual video path
-    output = get_data('../../data/training_data.mp4')
+    video_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', sys.argv[1])
+    output = get_data(video_path)
     print(output['basketball_data'])
+    print('MODEL RUN DONE')
     with open('../../tmp/test_output.pickle', 'wb') as f:
         pickle.dump(output, f)
     

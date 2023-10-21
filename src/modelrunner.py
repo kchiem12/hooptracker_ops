@@ -50,7 +50,7 @@ class ModelRunner:
         """
         # comment first two lines out to exclude running the model
         # self.drop_frames(self.video_path)
-        # subprocess.run(['bash', 'src/StrongSORT-YOLO/run_tracker.sh'])
+        subprocess.run(['bash', 'src/StrongSORT-YOLO/run_tracker.sh', self.video_path])
         with open('tmp/output.pickle', 'rb') as f:
             self.output_dict = pickle.load(f)
 

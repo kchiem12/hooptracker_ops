@@ -36,6 +36,7 @@ class GameState:
         # MUTABLE
         # [{'frameno': #, 'ball': {xmin, xmax, ymin, ymax}, 'playerid'...}]
         self.states = None
+        # [(start_frame, end_frame, TODO something)]
         self.possession_list = None
         # {'playerid': {'shots': 0, "points": 0, "rebounds": 0, "assists": 0}}
         self.players = {}
