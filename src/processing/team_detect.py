@@ -1,4 +1,6 @@
 from typing import Tuple
+from state import GameState
+
 """
 Team Detection and Possession Finder
 
@@ -8,14 +10,14 @@ also create a list of players in the order of ball possession.
 
 
 def curr_possession(players, ball):
-    '''
+    """
     Input:
         players: dictionary of players
         ball: dictionary containing coords of the ball
     Output:
         possession_list [list]: list of player ids in the order of ball
                                 possession throughout the video
-    '''
+    """
     player_ids = players.keys()
     max_area = 0
     max_player = None
@@ -39,7 +41,7 @@ def curr_possession(players, ball):
 
 
 def possession_list(frames, player_list, thresh=20):
-    '''
+    """
     Input:
         state: a StatState class that holds all sorts of information
                 on the video
@@ -48,7 +50,7 @@ def possession_list(frames, player_list, thresh=20):
     Output:
         possession_list [list(tuples)]: list of tuples of the form
                                         (playerid, startframe, endframe)
-    '''
+    """
     # list of frames where a frame is a dictionary with key classes and
     # values xmin, ymin, xmax, ymax
     # for key = players value has the format {players:
@@ -70,14 +72,20 @@ def possession_list(frames, player_list, thresh=20):
             continue
         else:
             if counter >= thresh:
-                pos_lst.append((current_player, int(frame.get(
-                    "frameno"))-counter, frame.get("frameno")))
+                pos_lst.append(
+                    (
+                        current_player,
+                        int(frame.get("frameno")) - counter,
+                        frame.get("frameno"),
+                    )
+                )
             current_player = poss
             counter = 1
             # Can make this more robust by allowing for a certain number of
             # frames where the ball is not in the possession of any player
             # or of a different player
     return pos_lst
+
 
 # def connections(pos_lst, players):
 #     """
@@ -117,9 +125,8 @@ def connections(pos_lst, players, player_idx):
                                     player i passes to player j
     """
     connects = [[0 for _ in range(len(players))] for _ in range(len(players))]
-    for i in range(0, len(pos_lst)-1):
-        connects[player_idx.get(pos_lst[i][0])
-                 ][player_idx.get(pos_lst[i+1][0])] += 1
+    for i in range(0, len(pos_lst) - 1):
+        connects[player_idx.get(pos_lst[i][0])][player_idx.get(pos_lst[i + 1][0])] += 1
     return connects
 
 
@@ -133,54 +140,30 @@ def possible_teams(players):
     num_people = len(players)
 
     acc = []
+
     def permutation(i, t):
         if i >= num_people:
             return
         if len(t) == ppl_per_team:
             acc.append((t, (set(players) - set(t))))
         else:
-            permutation(i+1, t.copy())
+            permutation(i + 1, t.copy())
             t.add(players[i])
-            permutation(i+1, t.copy())
+            permutation(i + 1, t.copy())
 
     if num_people % 2 != 0:
-        ppl_per_team = int(num_people/2) + 1
+        ppl_per_team = int(num_people / 2) + 1
         permutation(0, set())
         ppl_per_team -= 1
         permutation(0, set())
     else:
-        ppl_per_team = int(num_people/2)
+        ppl_per_team = int(num_people / 2)
         permutation(0, set())
     return acc
 
 
-def get_playerlist(frames, playerthresh=100):
-    '''
-    Input:
-        frames: list of frames where a frame is a dictionary with key classes and
-                values xmin, ymin, xmax, ymax
-                for key = players value has the format {players:
-                {playerid1: {xmin: val, ymin: val, xmax: val, ymax: val}}}
-    Output:
-        player_list [list]: list of player ids
-    '''
-    playerframecount = {}
-    player_list = []
-    for frame in frames:
-        players = frame.get("players")
-        for player in players:
-            if player not in playerframecount:
-                playerframecount[player] = 1
-            else:
-                playerframecount[player] += 1
-    for player in playerframecount.keys():
-        if playerframecount.get(player) >= playerthresh:
-            player_list.append(player)
-    return player_list
-
-
-def team_split(frames):
-    '''
+def team_split(state: GameState):
+    """
     Input:
         state: a StatState class that holds all sorts of information
                 on the video
@@ -189,9 +172,9 @@ def team_split(frames):
                             team split
         pos_lst [list[tuple]]: list of player ids in the order of ball
                                 possession with start and finish frames
-    '''
-    player_list = get_playerlist(frames, playerthresh=100)
-    pos_lst = possession_list(frames, player_list, thresh=11)
+    """
+    player_list = state.players.keys()
+    pos_lst = possession_list(state.states, player_list, thresh=11)
     player_idx = {player: i for i, player in enumerate(player_list)}
     connects = connections(pos_lst, player_list, player_idx)
     teams = possible_teams(player_list)
@@ -203,10 +186,8 @@ def team_split(frames):
         team2 = list(team[1])
         for player1 in team1:
             for player2 in team2:
-                count += (connects[player_idx.get(player1)]
-                          [player_idx.get(player2)])
-                count += (connects[player_idx.get(player2)]
-                          [player_idx.get(player1)])
+                count += connects[player_idx.get(player1)][player_idx.get(player2)]
+                count += connects[player_idx.get(player2)][player_idx.get(player1)]
         if count < min_count:
             min_count = count
             best_team = team
