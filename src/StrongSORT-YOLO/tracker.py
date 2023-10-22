@@ -6,7 +6,7 @@ import threading as th
 import time
 
 FILE = Path(__file__).resolve()
-ROOT = FILE.parents[0]  # yolov7 strongsort root directory
+ROOT = FILE.parents[0]  
 WEIGHTS = ROOT / 'weights'
 
 def track_person(res, source_mov:str, idx:int):
