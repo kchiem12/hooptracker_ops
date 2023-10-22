@@ -2,7 +2,7 @@
 Parsing module for parsing all
 models outputs into the state
 """
-from state import *
+from state import GameState, Frame, ObjectType
 
 
 def parse_sort_output(state: GameState, sort_output) -> None:
@@ -21,11 +21,10 @@ def parse_sort_output(state: GameState, sort_output) -> None:
     lines = [[int(x) for x in line.split()] for line in file.readlines()]
     file.close()
 
-    sts = state.states
+    sts = state.frames
     b = 0  # index of line in ball
     s = 0  # index of state
     while b < len(lines):
-        # TODO modify for BoT-SORT output
         frame, obj_type, id, xmin, ymin, xwidth, ywidth = lines[b][:7]
         sF: Frame = sts[s]
         if s <= len(sts):  # s-1 frameno < bframe, s = len(states)
@@ -40,51 +39,20 @@ def parse_sort_output(state: GameState, sort_output) -> None:
 
         sF: Frame = sts[s]  # frame to be updated DO NOT DELETE LINE
         assert sF.frameno == frame
+        box = (xmin, ymin, xmin + xwidth, ymin + ywidth)
         if obj_type is ObjectType.BALL.value:
-            bf = BallFrame(xmin, ymin, xmax=xmin + xwidth, ymax=ymin + ywidth)
-            sF.ball = bf
-            id = "ball_" + id
-            sF.balls.update({id: bf})
-            if id not in state.balls:  # if new ball
-                state.balls.update({id: BallState()})
-            bs: BallState = state.balls.get(id)
-            bs.frames += 1
+            sF.set_ball_frame(id, *box)
         elif obj_type is ObjectType.PLAYER.value:
-            pf = PlayerFrame(xmin, ymin, xmax=xmin + xwidth, ymax=ymin + ywidth)
-            id = "player_" + id
-            sF.players.update({id: pf})
-            if id not in state.players:  # if new player
-                state.players.update({id: PlayerState()})
-            ps: PlayerState = state.players.get(id)
-            ps.frames += 1
+            sF.add_player_frame(id, *box)
         elif obj_type is ObjectType.RIM.value:
-            box = Box(xmin, ymin, xmax=xmin + xwidth, ymax=ymin + ywidth)
-            sF.rim = box
+            sF.set_rim_box(id, *box)
 
         b += 1  # process next line
 
 
-def filter_players(state: GameState, threshold: int) -> None:
-    "removes all players which appear for less than [threshold] frames"
-    for k in state.players:
-        v: PlayerState = state.players.get(k)
-        if v.frames < threshold:
-            state.players.pop(k)
-
-
-def filter_balls(state: GameState, threshold: int) -> None:
-    "removes all balls which appear for less than [threshold] frames"
-    for k in state.balls:
-        v: BallState = state.balls.get(k)
-        if v.frames < threshold:
-            state.balls.pop(k)
-
-
-def clean(state: GameState, pframe_threshold: int, bframe_threshold: int):
+def clean(state: GameState, pframe_threshold: int):
     """
     Imputes missing data and filters outs noise after parsing
         pframe_threshold: min frames a player should appear for in video
-        bframe_threshold: max frames a player should appear for in video
     """
-    filter_players(state, pframe_threshold)
-    filter_balls(state, bframe_threshold)
+    state.filter_players(pframe_threshold)

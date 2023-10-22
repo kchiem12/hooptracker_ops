@@ -38,7 +38,7 @@ class ProcessRunner:
         "Runs parse module over SORT (and pose later) outputs to update GameState"
         parse.parse_sort_output(self.state, self.players_tracking)
         parse.parse_sort_output(self.state, self.ball_tracking)
-        parse.clean(self.state, 100, 100)
+        parse.clean(self.state, 100)
 
     def run_team_detect(self):
         """
@@ -47,7 +47,7 @@ class ProcessRunner:
         Splits identified players into teams, then curates:
         ball state, passes, player possession, and team possession
         """
-        teams, pos_list, playerids = team_detect.team_split(self.state.states)
+        teams, pos_list, playerids = team_detect.team_split(self.state.frames)
         self.state.possession_list = pos_list
         for pid in playerids:
             self.state.players[pid] = {
@@ -57,7 +57,7 @@ class ProcessRunner:
                 "assists": 0,
             }
         self.state.ball_state = general_detect.ball_state_update(
-            pos_list, len(self.state.states) - 1
+            pos_list, len(self.state.frames) - 1
         )
         self.state.passes = general_detect.player_passes(pos_list)
         self.state.possession = general_detect.player_possession(pos_list)
@@ -86,7 +86,7 @@ class ProcessRunner:
         """Runs video rendering and reencodes, stores to output_video_path_reenc."""
         videoRender = video_render.VideoRender(self.homography)
         videoRender.render_video(
-            self.state.states, self.state.players, self.output_video_path
+            self.state.frames, self.state.players, self.output_video_path
         )
         videoRender.reencode(self.output_video_path, self.output_video_path_reenc)
 
