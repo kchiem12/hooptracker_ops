@@ -1,12 +1,12 @@
+"""
+Video Rendering module for courtline detection and video reencoding.
+"""
 import cv2 as cv
 import random
 import os
 import numpy as np
 import subprocess
 import sys
-
-# pass in homo matrix +  + 
-# implement video reencoding 
 
 class VideoRender:
     def __init__(self, homography):
@@ -58,7 +58,7 @@ class VideoRender:
         height, width, _ = background.shape
 
         # Initialize the video writer
-        fourcc = cv.VideoWriter_fourcc(*'H264')
+        fourcc = cv.VideoWriter_fourcc(*'mp4v')
         video_writer = cv.VideoWriter(filename, fourcc, fps, (width,height))
 
         # Define initial positions for each player
@@ -113,6 +113,7 @@ class VideoRender:
 
         # Release the video writer
         video_writer.release()
+
 
     def _transform_point(self,x:float,y:float):
         '''

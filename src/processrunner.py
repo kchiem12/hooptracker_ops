@@ -77,8 +77,11 @@ class ProcessRunner:
         self.run_general_detect()
         self.run_team_detect()
         self.run_shot_detect()
+        print('G, T, S detect fine')
         self.run_courtline_detect()
+        print('courtline detect fine')
         self.run_video_render()
+        print('video render fine')
 
 
     def get_results(self):
