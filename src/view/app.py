@@ -29,6 +29,11 @@ SERVER_URL = "http://127.0.0.1:8000/"
 
 
 def process_video(video_file):
+    '''
+    Takes in a mp4 file at video_file and uploads it to the backend, then stores
+    the processed video name into session state
+    Temporarily: stores the processed video into tmp/user_upload.mp4
+    '''
     if video_file is None:
         return False
     response = requests.post(SERVER_URL+"upload",
@@ -103,6 +108,7 @@ def results_page():
     )
 
     st.button(label='Back to Home', on_click=change_state, args=(0,),type="primary")
+
 
 def tips_page():
     '''
