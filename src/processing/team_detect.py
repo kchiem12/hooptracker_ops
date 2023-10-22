@@ -174,7 +174,7 @@ def team_split(state: GameState):
                                 possession with start and finish frames
     """
     player_list = state.players.keys()
-    pos_lst = possession_list(state.states, player_list, thresh=11)
+    pos_lst = possession_list(state.frames, player_list, thresh=11)
     player_idx = {player: i for i, player in enumerate(player_list)}
     connects = connections(pos_lst, player_list, player_idx)
     teams = possible_teams(player_list)

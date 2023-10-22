@@ -204,11 +204,28 @@ class Frame:
         # MUTABLE
         self.players: dict = {}  # ASSUMPTION: MULITPLE PEOPLE
         "dictionary of form {player_[id] : PlayerFrame}"
-        self.ball: BallFrame = None  # ASSUMPTION: SINGLE BALL
-        self.balls: dict = {}  # ASSUMPTION: MULITPLE BALLS
+        self.ball: BallFrame = None  # ASSUMPTION: SINGLE BALLS
         "dictionary of form {ball_[id] : BallFrame}"
         self.rim: Box = None  # ASSUMPTION: SINGLE RIM
         "bounding box of rim"
+
+    def add_player_frame(self, id: int, xmin: int, ymin: int, xmax: int, ymax: int):
+        "update players in frame given id and bounding boxes"
+        pf = PlayerFrame(xmin, ymin, xmax, ymax)
+        id = "player_" + id
+        self.players.update({id: pf})
+
+    def set_ball_frame(self, id: int, xmin: int, ymin: int, xmax: int, ymax: int):
+        "set ball in frame given id and bounding boxes"
+        bf = BallFrame(xmin, ymin, xmax, ymax)
+        id = "ball_" + id
+        self.ball = bf
+
+    def set_rim_box(self, id: int, xmin: int, ymin: int, xmax: int, ymax: int):
+        "set rim box given bounding boxes"
+        bf = BallFrame(xmin, ymin, xmax, ymax)
+        id = "ball_" + id
+        self.balls.update({id: bf})
 
     def check(self) -> bool:
         "verifies if well-defined"
@@ -270,7 +287,7 @@ class GameState:
         """
         # MUTABLE
 
-        self.states: list = []
+        self.frames: list = []
         "list of frames: [Frame], each frame has player, ball, and rim info"
 
         self.players: dict = {}
@@ -279,7 +296,8 @@ class GameState:
         self.balls: dict = {}
         "{ball_0 : BallState, ball_1 : BallState}"
 
-        self.shots
+        self.shots: list = []
+        " list of shots: [(player_[id],start,end)]"
 
         # EVERYTHING BELOW THIS POINT IS OUT-OF-DATE
 
@@ -301,6 +319,22 @@ class GameState:
         self.team1_pos = 0
         self.team2_pos = 0
 
+    def recompute_frame_count(self):
+        "recompute frame count of all players in frames"
+        for ps in self.players.values(): # reset to 0
+            ps.frame = 0
+        for frame in self.frames:
+            for pid in frame.players:
+                if pid not in self.players:
+                    self.players.update({pid : PlayerState()})
+                self.players.get(pid).frame += 1
+
+    def filter_players(self, threshold: int):
+        "removes all players which appear for less than [threshold] frames"
+        self.recompute_frame_count()
+        for k, v in enumerate(self.players):
+            if v.frames < threshold:
+                self.players.pop(k)
 
     def update_scores(self, madeshot_list):
         """
@@ -346,7 +380,7 @@ class GameState:
             if len(self.rim) > 0
             else "None",
             "Court lines coordinates": "None",
-            "Number of frames": str(len(self.states)),
+            "Number of frames": str(len(self.frames)),
             "Number of players": str(len(self.players)),
             "Number of passes": str(len(self.passes)),
             "Team 1": str(self.team1),
