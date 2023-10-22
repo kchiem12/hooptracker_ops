@@ -1,17 +1,17 @@
 from pathlib import Path
-import track_v5
+import track_v7
 import pickle
 import multiprocessing as mp
 import threading as th
 import time
 
 FILE = Path(__file__).resolve()
-ROOT = FILE.parents[0]  # yolov5 strongsort root directory
+ROOT = FILE.parents[0]  # yolov7 strongsort root directory
 WEIGHTS = ROOT / 'weights'
 
 def track_person(res, source_mov:str, idx:int):
     """ tracks persons in video and puts data in out_queue"""
-    out_array_pr, vid_path = track_v5.run(source = source_mov, classes= [1, 2],  yolo_weights = 
+    out_array_pr, vid_path = track_v7.run(source = source_mov, classes= [1, 2],  yolo_weights = 
                                           WEIGHTS / 'best.pt', save_vid=False, ret=True)
     
     res[idx] = (out_array_pr, vid_path)
@@ -21,7 +21,7 @@ def track_person(res, source_mov:str, idx:int):
 
 def track_basketball(res, source_mov:str, idx:int):
     """ tracks basketball in video and puts data in out_queue"""
-    out_array_bb, bb_vid_path = track_v5.run(source = source_mov, 
+    out_array_bb, bb_vid_path = track_v7.run(source = source_mov, 
                                              yolo_weights = WEIGHTS / 'best_basketball.pt', 
                                              save_vid=False, ret=True, skip_big=True)
     
