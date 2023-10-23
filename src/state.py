@@ -52,7 +52,7 @@ class Box:
         "(x,y) point relative to scaling. Requires Well-Defined Box"
         if self.check():
             x = int(xrel * (self.xmax - self.xmin))
-            y = int(xrel * (self.ymax - self.ymin))
+            y = int(yrel * (self.ymax - self.ymin))
             return (x, y)
         else:
             raise Exception("box not well-defined")
@@ -69,6 +69,12 @@ class Box:
             ymax=min(box.ymax, self.ymax),
         )
         return inter.area()
+
+    def contains(self, box) -> bool:
+        return self.area_of_intersection(box) == box.area()
+
+    def intersects(self, box) -> bool:
+        return self.area_of_intersection(box) != 0
 
     def check(self) -> bool:
         "verifies if well-defined"
@@ -102,16 +108,15 @@ class ShotAttempt:
         type: MISSED, TWO, or THREE
     """
 
-    def __init__(self, ballid: int, start: int, end: int) -> None:
+    def __init__(self, start: int, end: int) -> None:
         # IMMUTABLE
-        self.ballid: int = ballid
-        "ball's id"
         self.start: int = start
         "first frame"
         self.end: int = end
         "last frame"
 
         # MUTABLE
+        self.made: bool = False
         self.type: ShotType = None
         "MISSED, TWO, or THREE"
 
@@ -314,12 +319,12 @@ class BallState:
         self.frames: int = 0
 
 
-class PossessionInterval:
-    "Possession object of interval when certain player contains a ball"
+class Interval:
+    "Object of interval when certain player contains a ball"
 
     def __init__(self, playerid, start, end) -> None:
         """
-        Possession Interval obj containing
+        Interval obj containing
             playerid: id of player in possession
             start: start frame (inclusive)
             end: end frame (inclusive)
@@ -366,22 +371,22 @@ class GameState:
         """
         # MUTABLE
 
-        self.frames: list = []
+        self.frames: list[Frame] = []
         "list of frames: [Frame], each frame has player, ball, and rim info"
 
-        self.players: dict = {}
+        self.players: dict[str, PlayerState] = {}
         "Global player data: {player_0 : PlayerState, player_1 : PlayerState}"
 
         self.ball: BallState = BallState()
         "Global ball data"
 
-        self.possessions: list = []
+        self.possessions: list[Interval] = []
         "[PossessionInterval]"
 
-        self.passes: dict = {}
+        self.passes: dict[str, dict[int]] = {}
         "dictionary of passes {player_0 : {player_0 : 3}}"
 
-        self.shots: list = []
+        self.shots: list[Interval] = []
         " list of shots: [(player_[id],start,end)]"
 
         self.team1: set = set()
@@ -426,7 +431,7 @@ class GameState:
             if i >= len(lst):
                 s = sys.maxsize  # ensures new poss frame added
             else:
-                pi: PossessionInterval = lst[i]  # assume well-defined
+                pi: Interval = lst[i]  # assume well-defined
                 s = pi.start
 
             if len(poss) == 0 or s <= frame:  # skip when nothing
@@ -441,13 +446,13 @@ class GameState:
         "modifies posssession list to join same player intervals within threshold frames"
         i = 0
         while i < len(list) - 1:
-            p1: PossessionInterval = lst[i]
-            p2: PossessionInterval = lst[i + 1]
+            p1: Interval = lst[i]
+            p2: Interval = lst[i + 1]
 
             if p1.playerid is p2.playerid and p2.start - p1.end <= threshold:
                 lst.pop(i)
                 lst.pop(i)
-                p = PossessionInterval(p1.playerid, p1.start, p2.end)
+                p = Interval(p1.playerid, p1.start, p2.end)
                 lst.insert(i, p)
             else:
                 i += 1  # next interval pair
@@ -456,7 +461,7 @@ class GameState:
         "modifies posssession list to join same player intervals within threshold frames"
         i = 0
         while i < len(lst):
-            p: PossessionInterval = lst[i]
+            p: Interval = lst[i]
             if p.length < threshold or p.playerid not in self.players:
                 lst.pop(i)
             else:

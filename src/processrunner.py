@@ -1,15 +1,9 @@
 """
 Runner module for processing and statistics
 """
+from src.processing import court, render, shot, team
 from state import GameState
-from processing import (
-    parse,
-    general_detect,
-    team_detect,
-    shot_detect,
-    courtline_detect,
-    video_render,
-)
+from processing import parse
 
 
 class ProcessRunner:
@@ -45,24 +39,24 @@ class ProcessRunner:
         self.state.recompute_pass_from_possession()
 
     def run_team_detect(self):
-        team_detect.split_team(self.state)
+        team.split_team(self.state)
 
     def run_shot_detect(self):
         """Runs shot detection and updates scores."""
         # TODO figure out madeshot and resolve conflict in state & takuma module
-        made_shots = shot_detect.madeshot(
+        made_shots = shot.detect_shot(
             self.state
         )  # state already has rim information
         self.state.update_scores(made_shots)
 
     def run_courtline_detect(self):
         """Runs courtline detection."""
-        court = courtline_detect.Render(self.video_path)
-        self.homography = court.get_homography()
+        c = court.Render(self.video_path)
+        self.homography = c.get_homography()
 
     def run_video_render(self):
         """Runs video rendering and reencodes, stores to output_video_path_reenc."""
-        videoRender = video_render.VideoRender(self.homography)
+        videoRender = render.VideoRender(self.homography)
         videoRender.render_video(
             self.state.frames, self.state.players, self.output_video_path
         )
