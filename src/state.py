@@ -8,13 +8,17 @@ import sys
 # maintains dictionary functionality, if desired:
 def todict(obj):
     "to dictionary, recursively"
-    data = {}
-    for key, value in obj.__dict__.items():
-        try:
-            data[key] = todict(value)
-        except AttributeError:
-            data[key] = value
-    return data
+    if isinstance(obj, dict):
+        result = {}
+        for key, value in obj.items():
+            result[key] = todict(value)  # Recursive call for dictionary values
+        return result
+    elif hasattr(obj, "__dict__"):
+        return todict(obj.__dict__)  # Recursive call for objects with __dict__
+    elif isinstance(obj, list):
+        return [todict(item) for item in obj]  # Recursive call for list items
+    else:
+        return obj  # Base case: return the original value
 
 
 # of importance for SORT object type enumerating
@@ -99,17 +103,21 @@ class ShotType(Enum):
 
 
 class ShotAttempt:
-    """
-    A single shot attempt containing
-        ballid: ball's id
-        start: first frame
-        end: last frame
-        playerid: shot's player
-        type: MISSED, TWO, or THREE
-    """
+    "Shot Attempt object"
 
-    def __init__(self, start: int, end: int) -> None:
+    def __init__(self, playerid: str, start: int, end: int) -> None:
+        """
+        A single shot attempt containing
+            playerid: shot's player
+            start: first frame
+            end: last frame
+            made: whether it was made
+            frame: frameno if it was made
+            type: MISS, TWO, or THREE
+        """
         # IMMUTABLE
+        self.playerid: str = playerid
+        "player i of shot attempt"
         self.start: int = start
         "first frame"
         self.end: int = end
@@ -117,7 +125,9 @@ class ShotAttempt:
 
         # MUTABLE
         self.made: bool = False
-        self.type: ShotType = None
+        self.frame: int = None
+        "frame shot was made, if applicable"
+        self.type: ShotType = ShotType.MISS
         "MISSED, TWO, or THREE"
 
     def value(self) -> int:
@@ -235,7 +245,7 @@ class Frame:
         "frame number, Required: non-negative integer"
 
         # MUTABLE
-        self.players: dict = {}  # ASSUMPTION: MULITPLE PEOPLE
+        self.players: dict[str, PlayerFrame] = {}  # ASSUMPTION: MULITPLE PEOPLE
         "dictionary of form {player_[id] : PlayerFrame}"
         self.ball: BallFrame = None  # ASSUMPTION: SINGLE BALLS
         "dictionary of form {ball_[id] : BallFrame}"
@@ -247,13 +257,13 @@ class Frame:
     def add_player_frame(self, id: int, xmin: int, ymin: int, xmax: int, ymax: int):
         "update players in frame given id and bounding boxes"
         pf = PlayerFrame(xmin, ymin, xmax, ymax)
-        id = "player_" + id
+        id = "player_" + str(id)
         self.players.update({id: pf})
 
     def set_ball_frame(self, id: int, xmin: int, ymin: int, xmax: int, ymax: int):
         "set ball in frame given id and bounding boxes"
         bf = BallFrame(xmin, ymin, xmax, ymax)
-        id = "ball_" + id
+        id = "ball_" + str(id)
         self.ball = bf
 
     def set_rim_box(self, id: int, xmin: int, ymin: int, xmax: int, ymax: int):
@@ -395,12 +405,12 @@ class GameState:
     def recompute_frame_count(self):
         "recompute frame count of all players in frames"
         for ps in self.players.values():  # reset to 0
-            ps.frame = 0
+            ps.frames = 0
         for frame in self.frames:
             for pid in frame.players:
                 if pid not in self.players:
                     self.players.update({pid: PlayerState()})
-                self.players.get(pid).frame += 1
+                self.players.get(pid).frames += 1
 
     def recompute_possession_list(self, threshold=20, join_threshold=20):
         """
@@ -445,7 +455,7 @@ class GameState:
     def join_poss(self, lst: list, threshold: int = 20):  # possiblility of mapreduce
         "modifies posssession list to join same player intervals within threshold frames"
         i = 0
-        while i < len(list) - 1:
+        while i < len(lst) - 1:
             p1: Interval = lst[i]
             p2: Interval = lst[i + 1]
 
@@ -470,7 +480,8 @@ class GameState:
     def filter_players(self, threshold: int):
         "removes all players which appear for less than [threshold] frames"
         self.recompute_frame_count()
-        for k, v in enumerate(self.players):
+        for k in list(self.players.keys()):
+            v: PlayerState = self.players.get(k)
             if v.frames < threshold:
                 self.players.pop(k)
 
@@ -488,6 +499,7 @@ class GameState:
             p2 = self.possessions[i + 1].playerid
             self.passes[p1][p2] += 1
 
+    ## TODO Update for backend
     def update_scores(self, madeshot_list):
         """
         TODO check for correctness + potentially move out of state.py
@@ -525,24 +537,24 @@ class GameState:
             else:
                 self.score2 += 2
 
-    def __repr__(self) -> str:
-        result_dict = {
-            "Rim coordinates": str(self.rim) if len(self.rim) > 0 else "None",
-            "Backboard coordinates": str(self.backboard)
-            if len(self.rim) > 0
-            else "None",
-            "Court lines coordinates": "None",
-            "Number of frames": str(len(self.frames)),
-            "Number of players": str(len(self.players)),
-            "Number of passes": str(len(self.passes)),
-            "Team 1": str(self.team1),
-            "Team 2": str(self.team2),
-            "Team 1 Score": str(self.score1),
-            "Team 2 Score": str(self.score2),
-            "Team 1 Possession": str(self.team1_pos),
-            "Team 2 Possession": str(self.team2_pos),
-        }
-        for player in self.players:
-            result_dict[player] = str(self.players[player])
+    # def __repr__(self) -> str:
+    #     result_dict = {
+    #         "Rim coordinates": str(self.rim) if len(self.rim) > 0 else "None",
+    #         "Backboard coordinates": str(self.backboard)
+    #         if len(self.rim) > 0
+    #         else "None",
+    #         "Court lines coordinates": "None",
+    #         "Number of frames": str(len(self.frames)),
+    #         "Number of players": str(len(self.players)),
+    #         "Number of passes": str(len(self.passes)),
+    #         "Team 1": str(self.team1),
+    #         "Team 2": str(self.team2),
+    #         "Team 1 Score": str(self.score1),
+    #         "Team 2 Score": str(self.score2),
+    #         "Team 1 Possession": str(self.team1_pos),
+    #         "Team 2 Possession": str(self.team2_pos),
+    #     }
+    #     for player in self.players:
+    #         result_dict[player] = str(self.players[player])
 
-        return str(result_dict)
+    #     return str(result_dict)
