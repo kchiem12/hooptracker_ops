@@ -2,6 +2,7 @@
 Module containing state of game statistics
 """
 from enum import Enum
+import sys
 
 
 # maintains dictionary functionality, if desired:
@@ -40,9 +41,34 @@ class Box:
         self.xmax: int = xmax
         self.ymax: int = ymax
 
+    def area(self) -> int:
+        "area of bounding box"
+        if self.check():
+            return (self.xmax - self.xmin) * (self.ymax - self.ymin)
+        else:
+            return 0
+
+    def point(self, xrel: float, yrel: float) -> tuple:
+        "(x,y) point relative to scaling. Requires Well-Defined Box"
+        if self.check():
+            x = int(xrel * (self.xmax - self.xmin))
+            y = int(xrel * (self.ymax - self.ymin))
+            return (x, y)
+        else:
+            raise Exception("box not well-defined")
+
     def inbounds(self, x: int, y: int) -> bool:
         "if (x,y) within bounding box"
         return x >= self.xmin and x <= self.xmax and y >= self.ymin and y <= self.ymax
+
+    def area_of_intersection(self, box):
+        inter: Box = Box(
+            xmin=max(box.xmin, self.xmin),
+            ymin=max(box.ymin, self.ymin),
+            xmax=min(box.xmax, self.xmax),
+            ymax=min(box.ymax, self.ymax),
+        )
+        return inter.area()
 
     def check(self) -> bool:
         "verifies if well-defined"
@@ -188,15 +214,17 @@ class PlayerFrame:
 
 
 class Frame:
-    """
-    Frame containing
-        frameno: frame number
-        players: dictionary of players info during frame
-        balls: dictionary of balls info during frame
-        rim: bounding box of rim
-    """
+    "Frame class containing frame-by-frame information"
 
     def __init__(self, frameno: int) -> None:
+        """ "
+        Instantiates Frame containing fields
+            frameno: frame number
+            players: dictionary of players info during frame
+            balls: dictionary of balls info during frame
+            rim: bounding box of rim
+            possession: player in possession of ball
+        """
         # IMMUTABLE
         self.frameno: int = frameno
         "frame number, Required: non-negative integer"
@@ -208,6 +236,8 @@ class Frame:
         "dictionary of form {ball_[id] : BallFrame}"
         self.rim: Box = None  # ASSUMPTION: SINGLE RIM
         "bounding box of rim"
+        self.possesions: list[str] = []
+        "player in possession of ball"
 
     def add_player_frame(self, id: int, xmin: int, ymin: int, xmax: int, ymax: int):
         "update players in frame given id and bounding boxes"
@@ -223,9 +253,23 @@ class Frame:
 
     def set_rim_box(self, id: int, xmin: int, ymin: int, xmax: int, ymax: int):
         "set rim box given bounding boxes"
-        bf = BallFrame(xmin, ymin, xmax, ymax)
-        id = "ball_" + id
-        self.balls.update({id: bf})
+        r = Box(xmin, ymin, xmax, ymax)
+        self.rim = r
+
+    def calculate_possesions(self):
+        "calculate player in possession of ball, set to possession, None is none"
+        bbox: Box = self.ball.box
+        max_p: set = set()
+        max_a = 1
+        for p, pf in enumerate(self.players):
+            a = bbox.area_of_intersection(pf.box)
+            if a == max_a:
+                max_p.add(p)
+            elif a > max_a:
+                max_a = a
+                max_p = set()
+                max_p.add(p)
+        self.possesions = max_p
 
     def check(self) -> bool:
         "verifies if well-defined"
@@ -233,9 +277,13 @@ class Frame:
             assert (
                 self.frameno is not None
                 and self.players is not None
-                and self.balls is not None
+                and self.ball is not None
                 and self.rim is not None
             )
+            for pf in self.players.values():
+                assert pf.check()
+            assert self.ball.check()
+            assert self.rim.check()
         except:
             return False
         return True
@@ -267,6 +315,39 @@ class BallState:
         self.frames: int = 0
 
 
+class PossessionInterval:
+    "Possession object of interval when certain player contains a ball"
+
+    def __init__(self, playerid, start, end) -> None:
+        """
+        Possession Interval obj containing
+            playerid: id of player in possession
+            start: start frame (inclusive)
+            end: end frame (inclusive)
+            frames: iterable range over interval
+        """
+        # IMMUTABLE
+        self.playerid: str = playerid
+        self.start: int = start
+        self.end: int = end
+        self.length: int = end - start
+        self.frames = range(start, end)  # when want to iterate through frames
+
+    def check(self) -> bool:
+        "verifies if well-defined"
+        try:
+            assert (
+                self.playerid is not None
+                and self.start is not None
+                and self.frames is not None
+                and self.frames is not None
+            )
+            assert self.start <= self.end
+        except:
+            return False
+        return True
+
+
 class GameState:
     """
     State class holding: player positions, ball position, and team scores
@@ -296,20 +377,19 @@ class GameState:
         self.balls: dict = {}
         "{ball_0 : BallState, ball_1 : BallState}"
 
+        self.possessions: list = []
+        "[PossessionInterval]"
+
         self.shots: list = []
         " list of shots: [(player_[id],start,end)]"
 
         # EVERYTHING BELOW THIS POINT IS OUT-OF-DATE
 
-        self.possession_list = None
-        # {'playerid': {'shots': 0, "points": 0, "rebounds": 0, "assists": 0}}
-
         # [(start_frame, end_frame, BallFrame)]
         self.ball_state = None
         # {'pass_id': {'frames': (start_frame, end_frame)}, 'players':(p1_id, p2_id)}}
         self.passes = None
-        # {'player_id': [(start_frame, end_frame), ...]}
-        self.possession = None
+
         self.team1 = None
         self.team2 = None
 
@@ -321,13 +401,78 @@ class GameState:
 
     def recompute_frame_count(self):
         "recompute frame count of all players in frames"
-        for ps in self.players.values(): # reset to 0
+        for ps in self.players.values():  # reset to 0
             ps.frame = 0
         for frame in self.frames:
             for pid in frame.players:
                 if pid not in self.players:
-                    self.players.update({pid : PlayerState()})
+                    self.players.update({pid: PlayerState()})
                 self.players.get(pid).frame += 1
+
+    def recompute_possession_list(self, threshold=20, join_threshold=20):
+        """
+        Recompute posssession list with frame possession minimum [threshold].
+        Requires at least one frame
+        """
+        lst = []
+        prev = None
+        while lst != prev: # until lists have converged
+            prev = lst.copy()
+            self.grow_poss(lst)
+            self.join_poss(lst, threshold)
+            self.filter_poss(lst, join_threshold)
+        self.possessions = lst
+
+    def grow_poss(self, lst: list) -> None:
+        """
+        modifies posssession list [lst] with more possession, if avaiable
+
+        """
+        i = 0
+        fi = 0
+        while fi < len(self.frames):
+            f: Frame = self.frames[fi]
+            frame = f.frameno
+            poss = f.possesions
+
+            if i >= len(lst):
+                s = sys.maxsize  # ensures new poss frame added
+            else:
+                pi: PossessionInterval = lst[i]  # assume well-defined
+                s = pi.start
+
+            if len(poss) == 0 or s <= frame:  # skip when nothing
+                fi += 1  # next frame
+                continue
+            else:  # frame < start
+                p = poss.pop()  # arbitrary player
+                lst.insert(i, (p, frame, frame))
+                i += 1  # next interval
+
+    def join_poss(self, lst: list, threshold: int = 20):  # possiblility of mapreduce
+        "modifies posssession list to join same player intervals within threshold frames"
+        i = 0
+        while i < len(list) - 1:
+            p1: PossessionInterval = lst[i]
+            p2: PossessionInterval = lst[i + 1]
+
+            if p1.playerid is p2.playerid and p2.start - p1.end <= threshold:
+                lst.pop(i)
+                lst.pop(i)
+                p = PossessionInterval(p1.playerid, p1.start, p2.end)
+                lst.insert(i, p)
+            else:
+                i += 1  # next interval pair
+
+    def filter_poss(self, lst: list, threshold: int = 20):
+        "modifies posssession list to join same player intervals within threshold frames"
+        i = 0
+        while i < len(lst):
+            p: PossessionInterval = lst[i]
+            if p.length < threshold:
+                lst.pop(i)
+            else:
+                i += 1  # next interval
 
     def filter_players(self, threshold: int):
         "removes all players which appear for less than [threshold] frames"
