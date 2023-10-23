@@ -26,18 +26,17 @@ def parse_sort_output(state: GameState, sort_output) -> None:
     s = 0  # index of state
     while b < len(lines):
         frame, obj_type, id, xmin, ymin, xwidth, ywidth = lines[b][:7]
-        sF: Frame = sts[s]
-        if s <= len(sts):  # s-1 frameno < bframe, s = len(states)
+        if s >= len(sts):  # s-1 frameno < bframe, s = len(states)
             sts.append(Frame(frame))
-        elif frame < sF.frameno:  # s-1 frameno < bframe < s frameno
+        elif frame < sts[s].frameno:  # s-1 frameno < bframe < s frameno
             sts.insert(s, Frame(frame))
-        elif frame > sF.frameno:
-            if sF.rim is None and s > 0:
-                sF.rim = sts[s - 1].rim  # ensure rim set
+        elif frame > sts[s].frameno:
+            if sts[s].rim is None and s > 0:
+                sts[s].rim = sts[s - 1].rim  # ensure rim set
             s += 1
             continue
 
-        sF: Frame = sts[s]  # frame to be updated DO NOT DELETE LINE
+        sF: Frame = sts[s]
         assert sF.frameno == frame
         box = (xmin, ymin, xmin + xwidth, ymin + ywidth)
         if obj_type is ObjectType.BALL.value:

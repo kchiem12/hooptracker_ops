@@ -1,9 +1,9 @@
 """
 Runner module for processing and statistics
 """
-from src.processing import court, render, shot, team
+import state
 from state import GameState
-from processing import parse
+from processing import parse, court, render, shot, team
 
 
 class ProcessRunner:
@@ -42,12 +42,7 @@ class ProcessRunner:
         team.split_team(self.state)
 
     def run_shot_detect(self):
-        """Runs shot detection and updates scores."""
-        # TODO figure out madeshot and resolve conflict in state & takuma module
-        made_shots = shot.detect_shot(
-            self.state
-        )  # state already has rim information
-        self.state.update_scores(made_shots)
+        shot.shots(self.state, window=5)
 
     def run_courtline_detect(self):
         """Runs courtline detection."""
@@ -57,9 +52,7 @@ class ProcessRunner:
     def run_video_render(self):
         """Runs video rendering and reencodes, stores to output_video_path_reenc."""
         videoRender = render.VideoRender(self.homography)
-        videoRender.render_video(
-            self.state.frames, self.state.players, self.output_video_path
-        )
+        videoRender.render_video(self.state, self.output_video_path)
         videoRender.reencode(self.output_video_path, self.output_video_path_reenc)
 
     def run(self):
@@ -80,4 +73,4 @@ class ProcessRunner:
         """
         Returns string of processed statistics.
         """
-        return repr(self.state)
+        return str(state.todict(self.state))
