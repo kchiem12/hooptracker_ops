@@ -307,8 +307,7 @@ class BallState:
 
     def __init__(self) -> None:
         """
-        Ball state containing
-            frames: number frames player appeared in
+        Ball state containing ball stuff
 
         """
         # MUTABLE
@@ -356,15 +355,14 @@ class GameState:
     def __init__(self) -> None:
         """
         Initialises state; contains the following instance variables:
-            states: list of dictionaries with info at each frame
-            players: dictionary of players to PlayerState
-            balls: dictioanry of balls to BallState
-            possession_list: list of ball possession tuples
-            passes: dictionary of passes with their start and end frames and players involved
-            possession: dictionary of players with their possessions as list of frame tuples
-            team1, team2: list of players on each team
-            score1, score2: score of each team
-            team1_pos, team2_pos: percentage of possession for each team
+            frames: list of PlayerFrame
+            players: dictionary of PlayerState
+            ball: BallState
+            possessions: list of PossessionInterval
+            passes: dictionary of passes
+            shots: list of shots by player
+            team1: set of players on one team
+            team2: est of players on other team
         """
         # MUTABLE
 
@@ -374,30 +372,20 @@ class GameState:
         self.players: dict = {}
         "Global player data: {player_0 : PlayerState, player_1 : PlayerState}"
 
-        self.balls: dict = {}
-        "{ball_0 : BallState, ball_1 : BallState}"
+        self.ball: BallState = BallState()
+        "Global ball data"
 
         self.possessions: list = []
         "[PossessionInterval]"
 
+        self.passes: dict = {}
+        "dictionary of passes {player_0 : {player_0 : 3}}"
+
         self.shots: list = []
         " list of shots: [(player_[id],start,end)]"
 
-        # EVERYTHING BELOW THIS POINT IS OUT-OF-DATE
-
-        # [(start_frame, end_frame, BallFrame)]
-        self.ball_state = None
-        # {'pass_id': {'frames': (start_frame, end_frame)}, 'players':(p1_id, p2_id)}}
-        self.passes = None
-
-        self.team1 = None
-        self.team2 = None
-
-        # statistics
-        self.score1 = 0
-        self.score2 = 0
-        self.team1_pos = 0
-        self.team2_pos = 0
+        self.team1: set = set()
+        self.team2: set = set()
 
     def recompute_frame_count(self):
         "recompute frame count of all players in frames"
@@ -416,7 +404,7 @@ class GameState:
         """
         lst = []
         prev = None
-        while lst != prev: # until lists have converged
+        while lst != prev:  # until lists have converged
             prev = lst.copy()
             self.grow_poss(lst)
             self.join_poss(lst, threshold)
@@ -469,7 +457,7 @@ class GameState:
         i = 0
         while i < len(lst):
             p: PossessionInterval = lst[i]
-            if p.length < threshold:
+            if p.length < threshold or p.playerid not in self.players:
                 lst.pop(i)
             else:
                 i += 1  # next interval
@@ -480,6 +468,20 @@ class GameState:
         for k, v in enumerate(self.players):
             if v.frames < threshold:
                 self.players.pop(k)
+
+    def recompute_pass_from_possession(self):
+        "Recompute passes naively from possession list"
+        self.passes: dict = {}  # reset pass dictionary
+        for p in self.players:
+            self.passes.update({p: {}})
+            for c in self.players:
+                self.passes.get(p).update({c: 0})
+
+        i = 0
+        for i in range(len(self.possessions) - 1):
+            p1 = self.possessions[i].playerid
+            p2 = self.possessions[i + 1].playerid
+            self.passes[p1][p2] += 1
 
     def update_scores(self, madeshot_list):
         """
