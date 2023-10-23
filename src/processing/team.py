@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.cluster import SpectralClustering
 
 """
-Team Detection and Possession Finder
+Team Detection
 
 This module contains functions that will find the best team split. 
 """
