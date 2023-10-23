@@ -32,13 +32,16 @@ class ProcessRunner:
         self.ball_tracking = ball_tracking
         self.output_video_path = output_video_path
         self.output_video_path_reenc = output_video_path_reenc
-        self.state = GameState()
+        self.state: GameState = GameState()
 
     def run_parse(self):
         "Runs parse module over SORT (and pose later) outputs to update GameState"
         parse.parse_sort_output(self.state, self.players_tracking)
         parse.parse_sort_output(self.state, self.ball_tracking)
-        parse.clean(self.state, 100)
+
+    def run_possession(self):
+        self.state.filter_players(threshold=100)
+        self.state.recompute_possession_list(threshold=20, join_threshold=20)
 
     def run_team_detect(self):
         """
@@ -47,6 +50,7 @@ class ProcessRunner:
         Splits identified players into teams, then curates:
         ball state, passes, player possession, and team possession
         """
+
         teams, pos_list, playerids = team_detect.team_split(self.state.frames)
         self.state.possession_list = pos_list
         for pid in playerids:
@@ -95,6 +99,7 @@ class ProcessRunner:
         Runs all processing and statistics.
         """
         self.run_parse()
+        self.run_possession()
         self.run_team_detect()
         self.run_shot_detect()
         print('G, T, S detect fine')

@@ -48,11 +48,3 @@ def parse_sort_output(state: GameState, sort_output) -> None:
             sF.set_rim_box(id, *box)
 
         b += 1  # process next line
-
-
-def clean(state: GameState, pframe_threshold: int):
-    """
-    Imputes missing data and filters outs noise after parsing
-        pframe_threshold: min frames a player should appear for in video
-    """
-    state.filter_players(pframe_threshold)
