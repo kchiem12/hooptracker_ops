@@ -42,36 +42,10 @@ class ProcessRunner:
     def run_possession(self):
         self.state.filter_players(threshold=100)
         self.state.recompute_possession_list(threshold=20, join_threshold=20)
+        self.state.recompute_pass_from_possession()
 
     def run_team_detect(self):
-        """
-        TODO figure out how to decouple team and general processing more
-        TODO explain pos_list
-        Splits identified players into teams, then curates:
-        ball state, passes, player possession, and team possession
-        """
-
-        teams, pos_list, playerids = team_detect.team_split(self.state.frames)
-        self.state.possession_list = pos_list
-        for pid in playerids:
-            self.state.players[pid] = {
-                "shots": 0,
-                "points": 0,
-                "rebounds": 0,
-                "assists": 0,
-            }
-        self.state.ball_state = general_detect.ball_state_update(
-            pos_list, len(self.state.frames) - 1
-        )
-        self.state.passes = general_detect.player_passes(pos_list)
-        self.state.possession = general_detect.player_possession(pos_list)
-
-        self.state.team1 = teams[0]
-        self.state.team2 = teams[1]
-
-        self.state.team1_pos, self.state.team2_pos = team_detect.compute_possession(
-            self.state.possession, self.state.team1
-        )
+        team_detect.split_team(self.state)
 
     def run_shot_detect(self):
         """Runs shot detection and updates scores."""

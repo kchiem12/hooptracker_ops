@@ -44,6 +44,9 @@ yapf
 isort==4.3.21
 imageio
 
+# Processing
+scikit-learn
+
 # View
 streamlit>=1.18.1
 hydralit_components>=1.0.10
