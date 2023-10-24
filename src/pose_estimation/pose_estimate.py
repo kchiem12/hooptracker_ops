@@ -46,6 +46,9 @@ class PoseEstimator:
         # Initialize an empty list to store pose data
         pose_data = []
 
+        # empty list for shots
+        shots = []
+
         for frame_idx, result in enumerate(results):
             keypoints = result.keypoints.data[:, :, :2].numpy()  # Extracting the (x, y) coordinates
             confidences = result.keypoints.conf.numpy().tolist()  # Extracting the confidences
@@ -74,7 +77,24 @@ class PoseEstimator:
 
                 frame_pose_data['persons'].append(person_data)
 
+                # naive check shot: if wrists above shoulders
+                left_wrist_y = person_keypoints[9][1]
+                right_wrist_y = person_keypoints[10][1]
+                left_shoulder_y = person_keypoints[5][1]
+                right_shoulder_y = person_keypoints[6][1]
+
+                if left_wrist_y < left_shoulder_y and right_wrist_y < right_shoulder_y:
+                    shots.append("SHOT TAKEN: person " + str(person_idx) + ", frame " + str(frame_idx))
+                # end naive check shot
+
             pose_data.append(frame_pose_data)
+
 
         with open("tmp/pose_data.json", "w") as f:
             json.dump(pose_data, f)
+
+        # write to shots file
+        with open('tmp/shots.txt', 'w') as f:
+            for line in shots:
+                f.write(line)
+                f.write('\n')
