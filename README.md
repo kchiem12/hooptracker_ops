@@ -39,7 +39,7 @@ Enable AWS connection by pasting the .env file into the repo.
 
 Start the server backend by running
 ```
-uvicorn src.api/.backend:app --reload
+uvicorn src.api.backend:app --reload
 ```
 
 Open a new bash terminal and start the frontend by running

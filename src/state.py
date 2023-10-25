@@ -180,7 +180,7 @@ class BallFrame:
     def check(self) -> bool:
         "verifies if well-defined"
         try:
-            assert self.box.check() is True
+            assert self.box.check() == True
             assert self.playerid is not None and self.type is not None
         except:
             return False
@@ -217,7 +217,7 @@ class PlayerFrame:
     def check(self) -> bool:
         "verifies if well-defined"
         try:
-            assert self.box.check() is True
+            assert self.box.check() == True
             assert self.type is not None
             if self.type is ActionType.NOTHING:
                 assert self.ballid == -1
@@ -459,7 +459,7 @@ class GameState:
             p1: Interval = lst[i]
             p2: Interval = lst[i + 1]
 
-            if p1.playerid is p2.playerid and p2.start - p1.end <= threshold:
+            if p1.playerid == p2.playerid and p2.start - p1.end <= threshold:
                 lst.pop(i)
                 lst.pop(i)
                 p = Interval(p1.playerid, p1.start, p2.end)
