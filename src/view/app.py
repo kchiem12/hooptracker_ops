@@ -20,7 +20,7 @@ st.set_page_config(page_title="HoopTracker", page_icon=":basketball:")
 if "state" not in st.session_state:
     st.session_state.state = 0
     st.session_state.logo = "src/view/static/basketball.png"
-    with open("data/training_data.mp4", "rb") as file:
+    with open("data/short_new_1.mp4", "rb") as file:
         st.session_state.video_file = io.BytesIO(file.read())
     st.session_state.processed_video = None
     st.session_state.result_string = None
@@ -30,11 +30,11 @@ SERVER_URL = "http://127.0.0.1:8000/"
 
 
 def process_video(video_file):
-    '''
+    """
     Takes in a mp4 file at video_file and uploads it to the backend, then stores
     the processed video name into session state
     Temporarily: stores the processed video into tmp/user_upload.mp4
-    '''
+    """
     if video_file is None:
         return False
     response = requests.post(
@@ -112,12 +112,11 @@ def results_page():
     st.download_button(
         label="Download Results",
         use_container_width=True,
-        data=st.session_state.result_string, 
+        data=st.session_state.result_string,
         file_name="results.txt",
     )
 
     st.button(label="Back to Home", on_click=change_state, args=(0,), type="primary")
-
 
 
 def tips_page():
