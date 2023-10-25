@@ -567,7 +567,7 @@ class Render:
         """
         all_white = np.full_like(im_src, 255)
         max_overlap = self._apply_gray_homography(all_white, pts_src, pts_dst=pts_dst)
-        return np.count_nonzero(max_overlap > 100)
+        return np.count_nonzero(max_overlap > 100) + 1
 
     def _apply_bgr_homography(self, im_src: np.ndarray, pts_src: list):
         """
