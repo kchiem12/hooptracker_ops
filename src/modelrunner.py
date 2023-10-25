@@ -6,6 +6,8 @@ import cv2
 import pickle
 import subprocess
 from typing import Tuple
+from pose_estimation.pose_estimate import PoseEstimator
+from ultralytics import YOLO
 
 class ModelRunner:
     """
@@ -15,6 +17,7 @@ class ModelRunner:
     def __init__(self, video_path, model_vars) -> None:
         self.video_path = video_path
         self.frame_reduction_factor = model_vars['frame_reduction_factor']
+        self.pose_estimator = PoseEstimator(video_path=video_path)
 
 
     def drop_frames(self, input_path) -> str:
@@ -51,15 +54,24 @@ class ModelRunner:
         with open('tmp/output.pickle', 'rb') as f:
             self.output_dict = pickle.load(f)
 
-    
-    def fetch_output(self) -> Tuple[str, str]:
+    def pose(self):
+        model = YOLO('src/pose_estimation/best.pt')
+        results = model(
+            source = self.video_path,
+            show=False,
+            conf=0.3,
+            verbose = False
+        )
+        self.pose_estimator.estimate_pose(results = results)
+
+    def fetch_output(self) -> Tuple[str, str, str]:
         """
         Converts the people and ball model output in self.output.dict into txt files.
         Returns a tuple of the people and ball txt output paths.
         """
-        ball_list = [tuple(round(num) for num in tup) 
+        ball_list = [tuple(round(num) for num in tup)
                      for tup in self.output_dict['basketball_data'][0]]
-        people_list = [tuple(round(num) for num in tup) 
+        people_list = [tuple(round(num) for num in tup)
                        for tup in self.output_dict['person_data'][0]]
         ball_data = [(' '.join(map(str, ball[0:7])) + ' -1 -1 -1 -1')
                      for ball in ball_list]
@@ -72,4 +84,4 @@ class ModelRunner:
         with open('tmp/people.txt', 'w') as f:
             f.write('\n'.join(people_data))
 
-        return 'tmp/people.txt', 'tmp/ball.txt'
+        return 'tmp/people.txt', 'tmp/ball.txt', 'tmp/pose.txt'

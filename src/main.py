@@ -38,7 +38,8 @@ def main(video_path):
 
     modelrunner = ModelRunner(video_path, model_vars)
     modelrunner.run()
-    people_output, ball_output = modelrunner.fetch_output()
+    modelrunner.pose()
+    people_output, ball_output, pose_output = modelrunner.fetch_output()
     output_video_path = "tmp/court_video.mp4"
     output_video_path_reenc = "tmp/court_video_reenc.mp4"
 
@@ -49,10 +50,11 @@ def main(video_path):
         output_video_path,
         output_video_path_reenc,
     )
+
     processrunner.run()
     results = processrunner.get_results()
     return results
-
+  
 
 if __name__ == "__main__":
     import sys
