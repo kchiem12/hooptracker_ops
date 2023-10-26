@@ -20,7 +20,7 @@ st.set_page_config(page_title="HoopTracker", page_icon=":basketball:")
 if "state" not in st.session_state:
     st.session_state.state = 0
     st.session_state.logo = "src/view/static/basketball.png"
-    with open("data/short_new_1.mp4", "rb") as file:
+    with open("data/training_data.mp4", "rb") as file:
         st.session_state.video_file = io.BytesIO(file.read())
     st.session_state.processed_video = None
     st.session_state.result_string = None

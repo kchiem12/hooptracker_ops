@@ -213,20 +213,55 @@ class PlayerFrame:
         "ball in possession (-1) if not in possession"
         self.type: ActionType = None
         "NOTHING, DRIBBLE, PASS, SHOOT"
+        self.keypoints: dict[str, Keypoint] = {}
+        "keypoints of the player"
+
+    def set_keypoints(self, keypoints_data: dict) -> None:
+        "Sets the keypoints for the player"
+        for key, value in keypoints_data.items():
+            x, y, confidence = value
+            self.keypoints[key] = Keypoint(x, y, confidence)
 
     def check(self) -> bool:
         "verifies if well-defined"
         try:
-            assert self.box.check() == True
+            assert self.box.check()
             assert self.type is not None
             if self.type is ActionType.NOTHING:
                 assert self.ballid == -1
             else:
                 assert self.ballid != -1
-        except:
+            for keypoint in self.keypoints.values():
+                assert keypoint.check()
+        except AssertionError:
             return False
         return True
 
+class Keypoint:
+    """
+    Keypoint class containing the coordinates and confidence of a keypoint
+    """
+
+    def __init__(self, x: float, y: float, confidence: float) -> None:
+        # IMMUTABLE
+        self.x: float = x
+        "x-coordinate of the keypoint"
+        self.y: float = y
+        "y-coordinate of the keypoint"
+        self.confidence: float = confidence
+        "confidence score of the keypoint detection"
+
+    def __repr__(self) -> str:
+        return f"Keypoint(x={self.x}, y={self.y}, confidence={self.confidence})"
+
+    def check(self) -> bool:
+        "verifies if well-defined"
+        try:
+            assert 0 <= self.confidence <= 1
+            assert self.x >= 0 and self.y >= 0
+        except AssertionError:
+            return False
+        return True
 
 class Frame:
     "Frame class containing frame-by-frame information"
