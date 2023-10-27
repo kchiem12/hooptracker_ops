@@ -311,10 +311,31 @@ class PlayerState:
         """
         Player state containing
             frames: number frames player appeared in
-
+            field_goals_attempted: number of shots a player made
+            field_goals: number of made shots by a player
+            points: points scored by a player
+            field_goal_percentage: percentage of shots made by the player
         """
+
         # MUTABLE
         self.frames: int = 0
+        self.field_goals_attempted: int = 0
+        self.field_goals: int = 0
+        self.points: int = 0
+        self.field_goal_percentage: float = 0.0
+
+
+class TeamStats:
+    "Object of storing team statistics"
+
+    def __init__(self) -> None:
+        """
+        
+        """
+        self.shots_attemped: int = 0
+        self.shots_made: int = 0
+        self.points: int = 0
+        self.field_goal_percentage: float = 0.0
 
 
 class BallState:
@@ -399,8 +420,29 @@ class GameState:
         self.shots: list[Interval] = []
         " list of shots: [(player_[id],start,end)]"
 
+        self.shot_attempts: list[ShotAttempt] = []
+        "list of ShotAttempts: [ShotAttempt]"
+
         self.team1: set = set()
         self.team2: set = set()
+
+    def populate_players_stats(self):
+        '''
+        Iterates through all self.shot_attempts and updates the PlayerState with
+        their respective shot attempts (whether made or not) and points scored
+        '''
+        for shot in self.shot_attempts:
+
+            if shot.made:
+                self.players[shot.playerid].field_goals += 1
+                self.players[shot.playerid].points += shot.value()
+
+            self.players[shot.playerid].field_goals_attempted += 1
+
+            self.players[shot.playerid].field_goal_percentage = (
+                self.players[shot.playerid].field_goals
+                / self.players[shot.playerid].field_goals_attempted
+            )
 
     def recompute_frame_count(self):
         "recompute frame count of all players in frames"
@@ -428,7 +470,7 @@ class GameState:
 
     def grow_poss(self, lst: list) -> None:
         """
-        modifies posssession list [lst] with more possession, if avaiable
+        modifies possession list [lst] with more possession, if available
 
         """
         i = 0
@@ -521,7 +563,7 @@ class GameState:
                 mdsh_lst.append(shot)
 
         # Iterate through possession list and find who made the shot
-        # TODO what if madeshot_lst is empty?
+        # TODO what if madeshot_lst is empty? (no made shots)
         for pos in self.possession_list:
             if pos[2] >= mdsh_lst[counter][0]:
                 madeshots.append((pos[0], mdsh_lst[counter][0]))
