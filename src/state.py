@@ -445,7 +445,7 @@ class GameState:
             self.filter_poss(lst, join_threshold)
         self.possessions = lst
 
-    def grow_poss(self, lst: list[Interval]) -> None:
+    def grow_poss(self, lst: list) -> None:
         """
         modifies posssession list [lst] with more possession, if avaiable
 
@@ -471,9 +471,7 @@ class GameState:
                 lst.insert(i, Interval(p, frame, frame))
                 i += 1  # next interval
 
-    def join_poss(
-        self, lst: list[Interval], threshold: int = 20
-    ):  # possiblility of mapreduce
+    def join_poss(self, lst: list, threshold: int = 20):  # possiblility of mapreduce
         "modifies posssession list to join same player intervals within threshold frames"
         i = 0
         while i < len(lst) - 1:
@@ -488,7 +486,7 @@ class GameState:
             else:
                 i += 1  # next interval pair
 
-    def filter_poss(self, lst: list[Interval], threshold: int = 20):
+    def filter_poss(self, lst: list, threshold: int = 20):
         "modifies posssession list to join same player intervals within threshold frames"
         i = 0
         while i < len(lst):
