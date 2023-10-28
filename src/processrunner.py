@@ -34,8 +34,9 @@ class ProcessRunner:
         parse.parse_sort_output(self.state, self.ball_tracking)
 
     def run_possession(self):
+        self.state.recompute_possesssions()
         self.state.filter_players(threshold=100)
-        self.state.recompute_possession_list(threshold=20, join_threshold=20)
+        self.state.recompute_possession_list(threshold=10, join_threshold=20)
         self.state.recompute_pass_from_possession()
 
     def run_team_detect(self):
@@ -63,11 +64,11 @@ class ProcessRunner:
         self.run_possession()
         self.run_team_detect()
         self.run_shot_detect()
-        print('G, T, S detect fine')
+        print("G, T, S detect fine")
         self.run_courtline_detect()
-        print('courtline detect fine')
+        print("courtline detect fine")
         self.run_video_render()
-        print('video render fine')
+        print("video render fine")
 
     def get_results(self):
         """

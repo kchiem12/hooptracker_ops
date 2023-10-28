@@ -251,8 +251,8 @@ class Frame:
         "dictionary of form {ball_[id] : BallFrame}"
         self.rim: Box = None  # ASSUMPTION: SINGLE RIM
         "bounding box of rim"
-        self.possesions: list[str] = []
-        "player in possession of ball"
+        self.possessions: list[str] = []
+        "player in possession of ball, area of intersection"
 
     def add_player_frame(self, id: int, xmin: int, ymin: int, xmax: int, ymax: int):
         "update players in frame given id and bounding boxes"
@@ -284,7 +284,7 @@ class Frame:
                 max_a = a
                 max_p = set()
                 max_p.add(p)
-        self.possesions = max_p
+        self.possessions = max_p
 
     def check(self) -> bool:
         "verifies if well-defined"
@@ -412,6 +412,25 @@ class GameState:
                     self.players.update({pid: PlayerState()})
                 self.players.get(pid).frames += 1
 
+    def recompute_possesssions(self):
+        "naively compute frame-by-frame possession of ball"
+        for frame in self.frames:
+            if frame.ball is None:
+                frame.possessions = []
+                continue
+            lst: list[(str, int)] = []
+            ball: Box = frame.ball.box
+            for id, p in frame.players.items():
+                a: int = p.box.area_of_intersection(ball)
+                if a == 0:
+                    continue
+                lst.append((id, a))
+
+            sorted_lst: list[(str, int)] = sorted(
+                lst, key=lambda x: x[1]
+            )  # sorted from least to greatest intersect
+            frame.possessions = [x for (x, _) in sorted_lst]
+
     def recompute_possession_list(self, threshold=20, join_threshold=20):
         """
         Recompute posssession list with frame possession minimum [threshold].
@@ -426,7 +445,7 @@ class GameState:
             self.filter_poss(lst, join_threshold)
         self.possessions = lst
 
-    def grow_poss(self, lst: list) -> None:
+    def grow_poss(self, lst: list[Interval]) -> None:
         """
         modifies posssession list [lst] with more possession, if avaiable
 
@@ -436,7 +455,7 @@ class GameState:
         while fi < len(self.frames):
             f: Frame = self.frames[fi]
             frame = f.frameno
-            poss = f.possesions
+            poss = f.possessions
 
             if i >= len(lst):
                 s = sys.maxsize  # ensures new poss frame added
@@ -448,11 +467,13 @@ class GameState:
                 fi += 1  # next frame
                 continue
             else:  # frame < start
-                p = poss.pop()  # arbitrary player
-                lst.insert(i, (p, frame, frame))
+                p = poss.pop()  # pop last player, most likely intersect
+                lst.insert(i, Interval(p, frame, frame))
                 i += 1  # next interval
 
-    def join_poss(self, lst: list, threshold: int = 20):  # possiblility of mapreduce
+    def join_poss(
+        self, lst: list[Interval], threshold: int = 20
+    ):  # possiblility of mapreduce
         "modifies posssession list to join same player intervals within threshold frames"
         i = 0
         while i < len(lst) - 1:
@@ -467,7 +488,7 @@ class GameState:
             else:
                 i += 1  # next interval pair
 
-    def filter_poss(self, lst: list, threshold: int = 20):
+    def filter_poss(self, lst: list[Interval], threshold: int = 20):
         "modifies posssession list to join same player intervals within threshold frames"
         i = 0
         while i < len(lst):

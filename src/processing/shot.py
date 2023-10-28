@@ -21,10 +21,13 @@ def detect_shot(state: GameState, inte: Interval, window: int) -> ShotAttempt:
         ball = state.frames[i].ball
 
         sf = ShotFrame()
-        if ball.box.intersects(top):
-            sf.top = True
-        if rim.contains(ball.box):
-            sf.rim = True
+        if ball is None or rim is None:
+            pass
+        else:
+            if ball.box.intersects(top):
+                sf.top = True
+            if rim.contains(ball.box):
+                sf.rim = True
         sfs.append(sf)
 
     r = 0  # freq rim intersects in window
