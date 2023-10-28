@@ -107,5 +107,5 @@ if __name__ == "__main__":
     output = get_data(video_path)
     print(output["basketball_data"])
     print("MODEL RUN DONE")
-    with open("../../tmp/test_output.pickle", "wb") as f:
+    with open("../../tmp/output.pickle", "wb") as f:
         pickle.dump(output, f)
