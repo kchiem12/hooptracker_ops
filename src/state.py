@@ -323,6 +323,7 @@ class PlayerState:
         self.field_goals: int = 0
         self.points: int = 0
         self.field_goal_percentage: float = 0.0
+        self.passes: dict[int] = {}
 
 
 class TeamStats:
@@ -332,10 +333,17 @@ class TeamStats:
         """
         
         """
-        self.shots_attemped: int = 0
+        self.players: set = set()
+        self.shots_attempted: int = 0
         self.shots_made: int = 0
         self.points: int = 0
         self.field_goal_percentage: float = 0.0
+
+    def compute_field_goal_percentage(self):
+        if self.shots_attempted == 0:
+            self.field_goal_percentage = 0
+        else:
+            self.field_goal_percentage = self.shots_made / self.shots_attempted
 
 
 class BallState:
@@ -397,8 +405,8 @@ class GameState:
             possessions: list of PossessionInterval
             passes: dictionary of passes
             shots: list of shots by player
-            team1: set of players on one team
-            team2: est of players on other team
+            team1: object TeamStats for team1
+            team2: object TeamStats for team2
         """
         # MUTABLE
 
@@ -423,8 +431,31 @@ class GameState:
         self.shot_attempts: list[ShotAttempt] = []
         "list of ShotAttempts: [ShotAttempt]"
 
-        self.team1: set = set()
-        self.team2: set = set()
+        self.team1: TeamStats = TeamStats()
+        self.team2: TeamStats = TeamStats()
+
+    def populate_team_stats(self):
+        '''
+        Populates the scores and shots made/attempted for each team
+        '''
+        for shot in self.shot_attempts:
+
+            if shot.made:
+                if shot.playerid in self.team1.players:
+                    self.team1.shots_made += 1
+                    self.team1.points += shot.value()
+                else:
+                    self.team2.shots_made += 1
+                    self.team2.points += shot.value()
+
+            if shot.playerid in self.team1.players:
+                self.team1.shots_attempted += 1
+            else:
+                self.team2.shots_attempted += 1
+
+        self.team1.compute_field_goal_percentage()
+        self.team2.compute_field_goal_percentage()
+
 
     def populate_players_stats(self):
         '''
@@ -439,10 +470,19 @@ class GameState:
 
             self.players[shot.playerid].field_goals_attempted += 1
 
-            self.players[shot.playerid].field_goal_percentage = (
-                self.players[shot.playerid].field_goals
-                / self.players[shot.playerid].field_goals_attempted
-            )
+            if self.players[shot.playerid].field_goals_attempted == 0:
+                self.players[shot.playerid].field_goal_percentage = 0
+            else:
+                self.players[shot.playerid].field_goal_percentage = (
+                    self.players[shot.playerid].field_goals
+                    / self.players[shot.playerid].field_goals_attempted
+                )
+
+        # populates the player pass dictionary for each Player
+        for p in self.passes:
+            for c in self.passes[p]:
+                self.players[p].passes.update({c: self.passes[p][c]})
+
 
     def recompute_frame_count(self):
         "recompute frame count of all players in frames"
