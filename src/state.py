@@ -216,11 +216,12 @@ class PlayerFrame:
         self.keypoints: dict[str, Keypoint] = {}
         "keypoints of the player"
 
-    def set_keypoints(self, keypoints_data: dict) -> None:
+    def set_keypoints(self, keypoints_data: list) -> None:
+        print(keypoints_data)
         "Sets the keypoints for the player"
-        for key, value in keypoints_data.items():
-            x, y, confidence = value
-            self.keypoints[key] = Keypoint(x, y, confidence)
+        for key, value in enumerate(keypoints_data):
+            x, y = value
+            self.keypoints[key] = Keypoint(x, y)
 
     def check(self) -> bool:
         "verifies if well-defined"
@@ -242,22 +243,22 @@ class Keypoint:
     Keypoint class containing the coordinates and confidence of a keypoint
     """
 
-    def __init__(self, x: float, y: float, confidence: float) -> None:
+    def __init__(self, x: float, y: float) -> None:
         # IMMUTABLE
         self.x: float = x
         "x-coordinate of the keypoint"
         self.y: float = y
         "y-coordinate of the keypoint"
-        self.confidence: float = confidence
-        "confidence score of the keypoint detection"
+        # self.confidence: float = confidence
+        # "confidence score of the keypoint detection"
 
     def __repr__(self) -> str:
-        return f"Keypoint(x={self.x}, y={self.y}, confidence={self.confidence})"
+        return f"Keypoint(x={self.x}, y={self.y})"
 
     def check(self) -> bool:
         "verifies if well-defined"
         try:
-            assert 0 <= self.confidence <= 1
+            # assert 0 <= self.confidence <= 1
             assert self.x >= 0 and self.y >= 0
         except AssertionError:
             return False

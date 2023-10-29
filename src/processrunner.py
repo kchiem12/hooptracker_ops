@@ -32,6 +32,7 @@ class ProcessRunner:
         "Runs parse module over SORT (and pose later) outputs to update GameState"
         parse.parse_sort_output(self.state, self.players_tracking)
         parse.parse_sort_output(self.state, self.ball_tracking)
+        parse.parse_pose_output(self.state, "tmp/pose_data.json")
 
     def run_possession(self):
         self.state.filter_players(threshold=100)
