@@ -3,7 +3,7 @@ Module containing state of game statistics
 """
 from enum import Enum
 import sys
-
+import math
 
 # maintains dictionary functionality, if desired:
 def todict(obj):
@@ -245,9 +245,9 @@ class Keypoint:
 
     def __init__(self, x: float, y: float) -> None:
         # IMMUTABLE
-        self.x: float = x
+        self.x: int = math.trunc(x)
         "x-coordinate of the keypoint"
-        self.y: float = y
+        self.y: int = math.trunc(y)
         "y-coordinate of the keypoint"
         # self.confidence: float = confidence
         # "confidence score of the keypoint detection"
