@@ -54,12 +54,12 @@ def main(video_path):
     processrunner.run()
     results = processrunner.get_results()
     return results
-  
+
 
 if __name__ == "__main__":
     import sys
 
     if len(sys.argv) <= 1:
-        main("tmp/training_data.mp4")
+        main("tmp/user_upload.mp4")
     else:
         main(sys.argv[1])  # Pass the first command-line argument to the main function
