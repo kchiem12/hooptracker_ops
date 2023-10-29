@@ -43,7 +43,7 @@ class ProcessRunner:
         team.split_team(self.state)
 
     def run_shot_detect(self):
-        shot.shots(self.state, window=5)
+        shot.shots(self.state, window=10)
 
     def run_courtline_detect(self):
         """Runs courtline detection."""

@@ -75,7 +75,8 @@ class Box:
         return inter.area()
 
     def contains(self, box) -> bool:
-        return self.area_of_intersection(box) == box.area()
+        return self.area_of_intersection(box) >= 0.5*box.area()
+        # self.area_of_intersection(box) == min(box.area(), self.area())
 
     def intersects(self, box) -> bool:
         return self.area_of_intersection(box) != 0

@@ -105,7 +105,7 @@ def results_page():
         These are the results. Here's the processed video and a minimap of the player positions.
         """
     )
-    st.video(open(st.session_state.processed_video, "rb").read())
+    # st.video(open(st.session_state.processed_video, "rb").read())
 
     st.markdown("## Statistics")
     process_results()

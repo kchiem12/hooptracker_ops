@@ -14,7 +14,7 @@ WEIGHTS = ROOT / "weights"
 
 def track_person(res, source_mov: str, idx: int):
     """tracks persons in video and puts data in out_queue"""
-    out_array_pr, vid_path = track_v7.run(
+    out_array_pr, vid_path = track_v7.detect(
         source=source_mov,
         classes=[1, 2],
         yolo_weights=WEIGHTS / "best.pt",
