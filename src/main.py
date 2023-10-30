@@ -62,10 +62,8 @@ def main(video_path: str, results_out: str = "tmp/results.txt") -> None:
 
 if __name__ == "__main__":
     if len(sys.argv) == 2:
-        print("got here")
         main(sys.argv[1])
     else:
-        print("versus got here")
         main(
             "data/training_data.mp4"
         )  # Pass the first command-line argument to the main function
