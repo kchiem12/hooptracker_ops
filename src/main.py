@@ -58,8 +58,7 @@ def main(video_path):
 
 if __name__ == "__main__":
     import sys
-
     if len(sys.argv) <= 1:
-        main("tmp/user_upload.mp4")
+        main("data/training_data.mp4")
     else:
         main(sys.argv[1])  # Pass the first command-line argument to the main function

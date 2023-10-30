@@ -6,7 +6,5 @@ yolov8m-pose.pt
 ball/lib/python3.11/site-packages/torch/lib/libtorch_cpu.dylib
 venv/lib/python3.11/site-packages/torch/lib/libtorch_cpu.dylib
 ball/
-tmp/
-tmp/*.json
 .DS_Store
 .vscode/

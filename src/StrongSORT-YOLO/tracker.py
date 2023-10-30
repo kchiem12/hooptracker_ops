@@ -104,7 +104,6 @@ def test():
 
 
 if __name__ == "__main__":
-    # TODO change to actual video path
     if len(sys.argv) == 2:
         output = get_data("../../" + sys.argv[1])
         print(output["basketball_data"])

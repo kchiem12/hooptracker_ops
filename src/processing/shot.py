@@ -60,4 +60,7 @@ def shots(state: GameState, window: int):
 
     for inte in shots:
         sa: ShotAttempt = detect_shot(state, inte, window=window)
-        state.shots.append(sa)
+        state.shot_attempts.append(sa)
+
+    state.populate_players_stats() # populate players stats
+    state.populate_team_stats() # populate team stats
