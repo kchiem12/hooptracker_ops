@@ -113,7 +113,8 @@ class ModelRunner:
         self.pose_estimator.estimate_pose(results=results)
         print("==============Pose estimated!============")
 
-    def run_models(self):
+
+    def run(self):
         """
         Runs both pose estimation and strongSORT simultaneously
         (2 strongsort passes for players/rim vs ball)
@@ -136,14 +137,6 @@ class ModelRunner:
         end = time.time()
 
         print(f"=============time elapsed: {end-start}=================")
-
-    def run(self):
-        """
-        Executes StrongSORT models and its related video pre- and post- processing.
-        """
-        # comment first two lines out to exclude running the model
-        # self.drop_frames(self.video_path)
-        self.run_models()
 
     def fetch_output(self) -> Tuple[str, str, str]:
         """
