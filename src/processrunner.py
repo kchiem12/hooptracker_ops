@@ -35,7 +35,7 @@ class ProcessRunner:
 
     def run_possession(self):
         self.state.recompute_possesssions()
-        threshold = max(100, len(self.state.frames) / 3)  # in case of short video
+        threshold = min(100, len(self.state.frames) / 3)  # in case of short video
         self.state.filter_players(threshold=threshold)
         self.state.recompute_possession_list(threshold=10, join_threshold=20)
         self.state.recompute_pass_from_possession()
@@ -44,7 +44,7 @@ class ProcessRunner:
         team.split_team(self.state)
 
     def run_shot_detect(self):
-        shot.shots(self.state, window=5)
+        shot.shots(self.state, window=10)
 
     def run_courtline_detect(self):
         """Runs courtline detection."""
