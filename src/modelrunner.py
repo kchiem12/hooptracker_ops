@@ -69,8 +69,10 @@ class ModelRunner:
 
     def track_person(self):
         """tracks persons in video and puts data in out_queue"""
+        print("==============Start Players and Rim tracking!============")
         out_array_pr, vid_path = track.run(
             source=self.video_path,
+            logger_name="yolov5_person",
             classes=[1, 2],
             yolo_weights=WEIGHTS / "best.pt",
             save_vid=False,
@@ -84,12 +86,14 @@ class ModelRunner:
         ]
         with open(self.people_out, "w") as f:
             f.write("\n".join(people_data))
-        print("==============Players adn Rim saved to file!============")
+        print("==============Players and Rim saved to file!============")
 
     def track_basketball(self):
         """tracks basketball in video and puts data in out_queue"""
+        print("==============Start Ball tracking!============")
         out_array_bb, bb_vid_path = track.run(
             source=self.video_path,
+            logger_name="yolov5_ball",
             yolo_weights=WEIGHTS / "best_basketball.pt",
             save_vid=False,
             ret=True,
@@ -106,13 +110,13 @@ class ModelRunner:
         print("==============Basketball saved to file!============")
 
     def pose(self):
+        print("==============Start pose estimation!============")
         model = YOLO("src/pose_estimation/best.pt")
         results = model(
             source=self.video_path, show=False, conf=0.3, verbose=True, stream=True
         )
         self.pose_estimator.estimate_pose(results=results)
         print("==============Pose estimated!============")
-
 
     def run(self):
         """
