@@ -112,7 +112,7 @@ class ModelRunner:
         print("==============Start pose estimation!============")
         model = YOLO("src/pose_estimation/best.pt")
         print("model", type(model))
-        results = model(source=self.video_path, show=False, conf=0.3, stream=False)
+        results = model(source=self.video_path, show=False, conf=0.3, stream=True)
         print("results", type(results))
 
         self.pose_estimator.estimate_pose(results=results)
