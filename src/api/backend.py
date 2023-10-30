@@ -49,10 +49,11 @@ async def process_file(file_name: str):
     try:
         command = ["python", "src/main.py", file_name]
         # Start the subprocess, capturing the standard output
-        process = subprocess.Popen(command, stdout=subprocess.PIPE, universal_newlines=True)
-        for line in process.stdout:
-            print(line, end="")
-        process.wait()
+        # process = subprocess.Popen(command, stdout=subprocess.PIPE, universal_newlines=True)
+        # for line in process.stdout:
+        #     print(line, end="")
+        # process.wait()
+        subprocess.run(command)
         return {"message": f"successfully processed {file_name}", "status": "success"}
     except Exception as ex:
         return {"error": str(ex)}
