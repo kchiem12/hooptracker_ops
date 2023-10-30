@@ -20,10 +20,12 @@ st.set_page_config(page_title="HoopTracker", page_icon=":basketball:")
 if "state" not in st.session_state:
     st.session_state.state = 0
     st.session_state.logo = "src/view/static/basketball.png"
-    with open("data/training_data.mp4", "rb") as file:
+    with open("data/short_new_1.mp4", "rb") as file:
         st.session_state.video_file = io.BytesIO(file.read())
     st.session_state.processed_video = None
     st.session_state.result_string = None
+    st.session_state.upload_name = None
+    st.session_state.user_file = "tmp/user_upload.mp4"
 
 # Backend Connection
 SERVER_URL = "http://127.0.0.1:8000/"
@@ -35,21 +37,36 @@ def process_video(video_file):
     the processed video name into session state
     Temporarily: stores the processed video into tmp/user_upload.mp4
     """
+    user_video: str = st.session_state.user_file
+    # UPLOAD VIDEO
     if video_file is None:
         return False
-    response = requests.post(
-        SERVER_URL + "upload", files={"video_file": video_file}, timeout=30
+    r = requests.post(
+        SERVER_URL + "upload", files={"video_file": video_file}, timeout=60
     )
-    if response.status_code == 200:
-        data = response.json()
+    if r.status_code == 200:
+        print("Successfully uploaded file")
+        data = r.json()
         st.session_state.upload_name = data.get("message")
-        # temp fix
-        with open("tmp/user_upload.mp4", "wb") as f:
-            # f.write(video_file.value)
+        with open(user_video, "wb") as f:  # TODO is local write; temp fix
             f.write(video_file.getvalue())
     else:
-        print("error uploading file")  # maybe make an error handler in frontend
+        print("Error uploading file")  # TODO make an error handler in frontend
+        return False
     st.session_state.is_downloaded = False
+
+    # PROCESS VIDEO
+    print("User Video", user_video)
+    # ASSUME process updates results locally for now TODO
+    r = requests.post(SERVER_URL + "process", params={"file_name": user_video})
+    if r.status_code == 200:
+        print(r.json().get("message"))
+        with open("tmp/results.txt", "r") as file:
+            st.session_state.result_string = file.read()
+        st.session_state.processed_video = "tmp/court_video_reenc.mp4"
+    else:
+        print(f"Error processing file: {r.text}")
+        return False
     return True
 
 
@@ -90,11 +107,14 @@ def loading_page():
         "",
         hc.Loaders.pulse_bars,
     ):
-        process_video(video_file=st.session_state.video_file)
-        fetch_result()
+        finished = process_video(video_file=st.session_state.video_file)
+        if finished:
+            state = 2
+        else:
+            state = 0  # TODO make error handling + error popup/page
 
     # Load results page when done
-    change_state(2)
+    change_state(state)
     st.experimental_rerun()
 
 
@@ -203,25 +223,6 @@ def update_video(video_file):
     @param video_file, file path to video
     """
     st.session_state.video_file = video_file
-
-
-def fetch_result():
-    """
-    Updates and returns the resulting statistics in string format.
-    TODO change to calling backend instead of accessing from repo
-    """
-    # if st.session_state.result_string is None:
-    #     response = requests.get(SERVER_URL+f"download/{st.session_state.upload_name}", files=
-    #                             {'file_name': st.session_state.upload_name, 'download_path':
-    #                              'tmp/user_upload.mp4'}, timeout=30)
-    #     if response.status_code == 200:
-    #         st.session_state.result_string = main('tmp/user_upload.mp4')
-    #     else:
-    #         print('error downloading file') # maybe make an error handler in frontend
-    #         st.session_state.result_string = main('data/training_data.mp4')
-
-    st.session_state.result_string = main("tmp/user_upload.mp4")
-    st.session_state.processed_video = "tmp/court_video_reenc.mp4"
 
 
 def process_results():

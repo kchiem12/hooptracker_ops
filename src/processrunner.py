@@ -62,14 +62,17 @@ class ProcessRunner:
         Runs all processing and statistics.
         """
         self.run_parse()
+        print("parsing complete!")
         self.run_possession()
+        print("possession detection complete!")
         self.run_team_detect()
+        print("team detection complete!")
         self.run_shot_detect()
-        print("G, T, S detect fine")
+        print("shot detection complete!")
         self.run_courtline_detect()
-        print("courtline detect fine")
+        print("court detection complete!")
         self.run_video_render()
-        print("video render fine")
+        print("court render complete!")
 
     def get_results(self):
         """

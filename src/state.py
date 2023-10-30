@@ -238,6 +238,7 @@ class PlayerFrame:
             return False
         return True
 
+
 class Keypoint:
     """
     Keypoint class containing the coordinates and confidence of a keypoint
@@ -263,6 +264,7 @@ class Keypoint:
         except AssertionError:
             return False
         return True
+
 
 class Frame:
     "Frame class containing frame-by-frame information"
@@ -631,63 +633,3 @@ class GameState:
             p1 = self.possessions[i].playerid
             p2 = self.possessions[i + 1].playerid
             self.passes[p1][p2] += 1
-
-    ## TODO Update for backend
-    def update_scores(self, madeshot_list):
-        """
-        TODO check for correctness + potentially move out of state.py
-        Description:
-            Returns a list of made shots with each shot represented as a tuple
-            and updates each team's and individual's scores.
-        Input:
-            madeshot_list [list]: list of made shot tuples
-            (frame, 0 if missed, 1 if made)
-        Effect:
-            Updates self.score1, self.score2.
-        """
-        madeshots = []
-        mdsh_lst = []
-        # Set counter to first made shot (where madeshot_list[counter][1] != 0)
-        counter = 0
-        for shot in madeshot_list:
-            if shot[1] != 0:
-                mdsh_lst.append(shot)
-
-        # Iterate through possession list and find who made the shot
-        # TODO what if madeshot_lst is empty? (no made shots)
-        for pos in self.possession_list:
-            if pos[2] >= mdsh_lst[counter][0]:
-                madeshots.append((pos[0], mdsh_lst[counter][0]))
-                counter += 1
-                if counter >= len(mdsh_lst):
-                    break
-        # For each shot made update the player's and team's score
-        for shot in madeshots:
-            self.players[shot[0]]["shots"] += 1
-            self.players[shot[0]]["points"] += 2
-            if shot[0] in self.team1:
-                self.score1 += 2
-            else:
-                self.score2 += 2
-
-    # def __repr__(self) -> str:
-    #     result_dict = {
-    #         "Rim coordinates": str(self.rim) if len(self.rim) > 0 else "None",
-    #         "Backboard coordinates": str(self.backboard)
-    #         if len(self.rim) > 0
-    #         else "None",
-    #         "Court lines coordinates": "None",
-    #         "Number of frames": str(len(self.frames)),
-    #         "Number of players": str(len(self.players)),
-    #         "Number of passes": str(len(self.passes)),
-    #         "Team 1": str(self.team1),
-    #         "Team 2": str(self.team2),
-    #         "Team 1 Score": str(self.score1),
-    #         "Team 2 Score": str(self.score2),
-    #         "Team 1 Possession": str(self.team1_pos),
-    #         "Team 2 Possession": str(self.team2_pos),
-    #     }
-    #     for player in self.players:
-    #         result_dict[player] = str(self.players[player])
-
-    #     return str(result_dict)
