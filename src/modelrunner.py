@@ -125,18 +125,18 @@ class ModelRunner:
         """
         mp.set_start_method("spawn", force=True)  # fix hanging issue of git actions
 
-        # p1 = mp.Process(target=self.track_person)
-        # p2 = mp.Process(target=self.track_basketball)
+        p1 = mp.Process(target=self.track_person)
+        p2 = mp.Process(target=self.track_basketball)
         p3 = mp.Process(target=self.pose)
 
         start = time.time()
 
-        # p1.start()
-        # p2.start()
+        p1.start()
+        p2.start()
         p3.start()
 
-        # p1.join()
-        # p2.join()
+        p1.join()
+        p2.join()
         p3.join()
 
         end = time.time()
