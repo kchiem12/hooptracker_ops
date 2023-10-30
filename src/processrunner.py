@@ -35,7 +35,7 @@ class ProcessRunner:
 
     def run_possession(self):
         self.state.recompute_possesssions()
-        threshold = max(100, len(self.state.frames) / 3)  # in case of short video
+        threshold = min(100, len(self.state.frames) / 3)  # in case of short video
         self.state.filter_players(threshold=threshold)
         self.state.recompute_possession_list(threshold=10, join_threshold=20)
         self.state.recompute_pass_from_possession()
