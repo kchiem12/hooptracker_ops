@@ -19,9 +19,11 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
     - name: Initialising AWS credentials
+      run: cat ${{github.workspace}}/.env | base64
+    - name: Setting AWS credentials
       env:
         DATA: ${{ secrets.AWS_ENV }}
-      run: $DATA >> ${{github.workspace}}/.env
+      run: echo $DATA >> ${{github.workspace}}/.env
     - name: Run CI tests
       run: |
         python src/main.py ${{github.workspace}}/data/short_new_1.mp4
