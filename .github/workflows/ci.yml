@@ -25,5 +25,10 @@ jobs:
         DATA: ${{ secrets.AWS_ENV }}
       run: echo $DATA >> /home/runner/work/Ball-101/Ball-101/.env
     - name: Run CI tests
-      run: python src/main.py
+      run: |
+        python src/main.py --ci ${{github.workspace}}/data/training_data.mp4
+        if [ ! -f ${{github.workspace}}/tmp/court_video_reenc.mp4 ]; then
+          echo "model run failed: output does not exist"
+          exit 1
+        fi
 
