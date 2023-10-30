@@ -112,9 +112,12 @@ class ModelRunner:
     def pose(self):
         print("==============Start pose estimation!============")
         model = YOLO("src/pose_estimation/best.pt")
+        print("model", type(model))
         results = model(
-            source=self.video_path, show=False, conf=0.3, verbose=True, stream=True
+            source=self.video_path, show=False, conf=0.3, verbose=True, stream=False
         )
+        print("results", type(results))
+
         self.pose_estimator.estimate_pose(results=results)
         print("==============Pose estimated!============")
 
@@ -124,18 +127,18 @@ class ModelRunner:
         (2 strongsort passes for players/rim vs ball)
         """
 
-        p1 = mp.Process(target=self.track_person)
-        p2 = mp.Process(target=self.track_basketball)
+        # p1 = mp.Process(target=self.track_person)
+        # p2 = mp.Process(target=self.track_basketball)
         p3 = mp.Process(target=self.pose)
 
         start = time.time()
 
-        p1.start()
-        p2.start()
+        # p1.start()
+        # p2.start()
         p3.start()
 
-        p1.join()
-        p2.join()
+        # p1.join()
+        # p2.join()
         p3.join()
 
         end = time.time()
