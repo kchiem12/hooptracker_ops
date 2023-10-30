@@ -75,7 +75,7 @@ except:
     from utils.dataloaders import VID_FORMATS, LoadImages, LoadStreams
 
 from utils.general import (
-    LOGGER,
+    get_logger,
     check_img_size,
     non_max_suppression,
     scale_coords,
@@ -101,6 +101,7 @@ logging.getLogger().removeHandler(logging.getLogger().handlers[0])
 @torch.no_grad()
 def run(
     source="0",
+    logger_name=None,  # log id of logger
     yolo_weights=WEIGHTS / "yolov5m.pt",  # model.pt path(s),
     strong_sort_weights=WEIGHTS / "osnet_x0_25_msmt17.pt",  # model.pt path,
     config_strongsort=ROOT / "strong_sort/configs/strong_sort.yaml",
@@ -135,6 +136,7 @@ def run(
     skips=1,  # how many frames to skip (cuts processing time by a factor of skips)
     skip_big=False,  # skip counting an object with large width
 ):
+    LOGGER = get_logger(logger_name)
     out_array = []
     source = str(source)
     save_img = not nosave and not source.endswith(".txt")  # save inference images
@@ -438,7 +440,7 @@ def run(
                         .apply(lambda x: sorted(x))
                     ).reset_index()
 
-                    df.colums = ["trackid", "class"]
+                    df.columns = ["trackid", "class"]
                     df["class"] = df["class"].apply(
                         lambda x: Counter(x).most_common(1)[0][0]
                     )

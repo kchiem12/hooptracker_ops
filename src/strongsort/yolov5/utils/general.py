@@ -114,6 +114,15 @@ LOGGER = logging.getLogger(
 )  # define globally (used in train.py, val.py, detect.py, etc.)
 
 
+def get_logger(name=None, verbose=VERBOSE):
+    set_logging(name)
+    if name is None:
+        name = "yolov5"
+    else:
+        name = str(name)
+    return logging.getLogger(name)
+
+
 def user_config_dir(dir="Ultralytics", env_var="YOLOV5_CONFIG_DIR"):
     # Return path of user configuration directory. Prefer environment variable if exists. Make dir if required.
     env = os.getenv(env_var)

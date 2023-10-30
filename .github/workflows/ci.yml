@@ -27,4 +27,4 @@ jobs:
       run: echo $DATA >> /home/runner/work/Ball-101/Ball-101/.env
     - name: Run CI tests
       run: |
-        python src/main.py data/training_data.mp4
+        python src/main.py
