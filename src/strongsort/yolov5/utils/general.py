@@ -280,12 +280,7 @@ def is_docker() -> bool:
 
 def is_colab():
     # Is environment a Google Colab instance?
-    try:
-        import google.colab
-
-        return True
-    except ImportError:
-        return False
+    return False
 
 
 def is_pip():
