@@ -2,6 +2,7 @@
 Main control loop module
 """
 import yaml
+import sys
 from modelrunner import ModelRunner
 from processrunner import ProcessRunner
 
@@ -60,8 +61,7 @@ def main(video_path:str, results_out:str= "tmp/results.txt") -> None:
 
 
 if __name__ == "__main__":
-    import sys
-    if len(sys.argv) <= 1:
-        main("data/training_data.mp4")
+    if len(sys.argv) == 2:
+        main(sys.argv[1])
     else:
-        main(sys.argv[1])  # Pass the first command-line argument to the main function
+        main("data/training_data.mp4")# Pass the first command-line argument to the main function

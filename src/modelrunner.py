@@ -1,14 +1,12 @@
 """
 Runner module for ML models
 """
-import os
 import cv2
 from typing import Tuple
 from pose_estimation.pose_estimate import PoseEstimator
 from ultralytics import YOLO
 
 from pathlib import Path
-import pickle
 import multiprocessing as mp
 
 import time
