@@ -19,14 +19,12 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
     - name: Initialising AWS credentials
-      run: cat /home/runner/work/Ball-101/Ball-101/.env | base64
-    - name: Putting data
       env:
         DATA: ${{ secrets.AWS_ENV }}
-      run: echo $DATA >> /home/runner/work/Ball-101/Ball-101/.env
+      run: $DATA >> ${{github.workspace}}/.env
     - name: Run CI tests
       run: |
-        python src/main.py --ci ${{github.workspace}}/data/training_data.mp4
+        python src/main.py ${{github.workspace}}/data/short_new_1.mp4
         if [ ! -f ${{github.workspace}}/tmp/court_video_reenc.mp4 ]; then
           echo "model run failed: output does not exist"
           exit 1
