@@ -1,20 +1,19 @@
 from pathlib import Path
-import track_v7
-import sys
-import os
+import track_v5
 import pickle
 import multiprocessing as mp
 import threading as th
 import time
+import sys
 
 FILE = Path(__file__).resolve()
-ROOT = FILE.parents[0]
+ROOT = FILE.parents[0]  # yolov5 strongsort root directory
 WEIGHTS = ROOT / "weights"
 
 
 def track_person(res, source_mov: str, idx: int):
     """tracks persons in video and puts data in out_queue"""
-    out_array_pr, vid_path = track_v7.detect(
+    out_array_pr, vid_path = track_v5.run(
         source=source_mov,
         classes=[1, 2],
         yolo_weights=WEIGHTS / "best.pt",
@@ -30,7 +29,7 @@ def track_person(res, source_mov: str, idx: int):
 
 def track_basketball(res, source_mov: str, idx: int):
     """tracks basketball in video and puts data in out_queue"""
-    out_array_bb, bb_vid_path = track_v7.run(
+    out_array_bb, bb_vid_path = track_v5.run(
         source=source_mov,
         yolo_weights=WEIGHTS / "best_basketball.pt",
         save_vid=False,
@@ -100,12 +99,18 @@ def get_data(source_mov: str):
     }
 
 
+def test():
+    print("import worked")
+
+
 if __name__ == "__main__":
-    video_path = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "..", "..", sys.argv[1]
-    )
-    output = get_data(video_path)
-    print(output["basketball_data"])
-    print("MODEL RUN DONE")
-    with open("../../tmp/test_output.pickle", "wb") as f:
-        pickle.dump(output, f)
+    if len(sys.argv) == 2:
+        output = get_data("../../" + sys.argv[1])
+        print(output["basketball_data"])
+        with open("../../tmp/output.pickle", "wb") as f:
+            pickle.dump(output, f)
+    else:
+        output = get_data("../../data/training_data.mp4")
+        print(output["basketball_data"])
+        with open("../../tmp/output.pickle", "wb") as f:
+            pickle.dump(output, f)

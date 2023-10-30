@@ -312,10 +312,37 @@ class PlayerState:
         """
         Player state containing
             frames: number frames player appeared in
-
+            field_goals_attempted: number of shots a player made
+            field_goals: number of made shots by a player
+            points: points scored by a player
+            field_goal_percentage: percentage of shots made by the player
         """
+
         # MUTABLE
         self.frames: int = 0
+        self.field_goals_attempted: int = 0
+        self.field_goals: int = 0
+        self.points: int = 0
+        self.field_goal_percentage: float = 0.0
+        self.passes: dict[int] = {}
+
+
+class TeamStats:
+    "Object of storing team statistics"
+
+    def __init__(self) -> None:
+        """ """
+        self.players: set = set()
+        self.shots_attempted: int = 0
+        self.shots_made: int = 0
+        self.points: int = 0
+        self.field_goal_percentage: float = 0.0
+
+    def compute_field_goal_percentage(self):
+        if self.shots_attempted == 0:
+            self.field_goal_percentage = 0
+        else:
+            self.field_goal_percentage = self.shots_made / self.shots_attempted
 
 
 class BallState:
@@ -377,8 +404,8 @@ class GameState:
             possessions: list of PossessionInterval
             passes: dictionary of passes
             shots: list of shots by player
-            team1: set of players on one team
-            team2: est of players on other team
+            team1: object TeamStats for team1
+            team2: object TeamStats for team2
         """
         # MUTABLE
 
@@ -400,8 +427,57 @@ class GameState:
         self.shots: list[Interval] = []
         " list of shots: [(player_[id],start,end)]"
 
-        self.team1: set = set()
-        self.team2: set = set()
+        self.shot_attempts: list[ShotAttempt] = []
+        "list of ShotAttempts: [ShotAttempt]"
+
+        self.team1: TeamStats = TeamStats()
+        self.team2: TeamStats = TeamStats()
+
+    def populate_team_stats(self):
+        """
+        Populates the scores and shots made/attempted for each team
+        """
+        for shot in self.shot_attempts:
+            if shot.made:
+                if shot.playerid in self.team1.players:
+                    self.team1.shots_made += 1
+                    self.team1.points += shot.value()
+                else:
+                    self.team2.shots_made += 1
+                    self.team2.points += shot.value()
+
+            if shot.playerid in self.team1.players:
+                self.team1.shots_attempted += 1
+            else:
+                self.team2.shots_attempted += 1
+
+        self.team1.compute_field_goal_percentage()
+        self.team2.compute_field_goal_percentage()
+
+    def populate_players_stats(self):
+        """
+        Iterates through all self.shot_attempts and updates the PlayerState with
+        their respective shot attempts (whether made or not) and points scored
+        """
+        for shot in self.shot_attempts:
+            if shot.made:
+                self.players[shot.playerid].field_goals += 1
+                self.players[shot.playerid].points += shot.value()
+
+            self.players[shot.playerid].field_goals_attempted += 1
+
+            if self.players[shot.playerid].field_goals_attempted == 0:
+                self.players[shot.playerid].field_goal_percentage = 0
+            else:
+                self.players[shot.playerid].field_goal_percentage = (
+                    self.players[shot.playerid].field_goals
+                    / self.players[shot.playerid].field_goals_attempted
+                )
+
+        # populates the player pass dictionary for each Player
+        for p in self.passes:
+            for c in self.passes[p]:
+                self.players[p].passes.update({c: self.passes[p][c]})
 
     def recompute_frame_count(self):
         "recompute frame count of all players in frames"
@@ -448,7 +524,7 @@ class GameState:
 
     def grow_poss(self, lst: list) -> None:
         """
-        modifies posssession list [lst] with more possession, if avaiable
+        modifies possession list [lst] with more possession, if available
 
         """
         i = 0
@@ -503,7 +579,9 @@ class GameState:
         for k in list(self.players.keys()):
             v: PlayerState = self.players.get(k)
             if v.frames < threshold:
-                self.players.pop(k)
+                self.players.pop(k, None)
+                for frame in self.frames:
+                    frame.players.pop(k, None)
 
     def recompute_pass_from_possession(self):
         "Recompute passes naively from possession list"
@@ -541,7 +619,7 @@ class GameState:
                 mdsh_lst.append(shot)
 
         # Iterate through possession list and find who made the shot
-        # TODO what if madeshot_lst is empty?
+        # TODO what if madeshot_lst is empty? (no made shots)
         for pos in self.possession_list:
             if pos[2] >= mdsh_lst[counter][0]:
                 madeshots.append((pos[0], mdsh_lst[counter][0]))
