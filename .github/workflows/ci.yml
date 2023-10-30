@@ -18,7 +18,6 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        sudo apt-get install -y ffmpeg
     - name: Initialising AWS credentials
       run: cat /home/runner/work/Ball-101/Ball-101/.env | base64
     - name: Putting data
@@ -26,5 +25,5 @@ jobs:
         DATA: ${{ secrets.AWS_ENV }}
       run: echo $DATA >> /home/runner/work/Ball-101/Ball-101/.env
     - name: Run CI tests
-      run: |
-        python src/main.py data/short_new_1.mp4
+      run: python src/main.py
+
