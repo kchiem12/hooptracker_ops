@@ -484,7 +484,7 @@ def run(
                     cv2.addWeighted(im0, 0.7, display, 1 - 0.7, 0, im0)
 
             # current frame // tesing
-            cv2.imwrite("testing.jpg", im0)
+            cv2.imwrite("tmp/testing.jpg", im0)
 
             if show_vid:
                 cv2.imshow(str(p), im0)
