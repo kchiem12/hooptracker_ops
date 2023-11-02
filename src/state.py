@@ -4,6 +4,7 @@ Module containing state of game statistics
 from enum import Enum
 from pose_estimation.pose_estimate import KeyPointNames
 import sys
+import math
 
 
 # maintains dictionary functionality, if desired:
@@ -221,7 +222,6 @@ class PlayerFrame:
     def set_keypoints(self, keypoints: list, confidences: list) -> None:
         "Sets the keypoints for the player"
         try:
-            
             assert len(keypoints) == len(confidences)
             assert len(keypoints) == len(KeyPointNames.list)
         except Exception as e:
@@ -260,21 +260,26 @@ class Keypoint:
 
     def __init__(self, x: float, y: float, confidence: float) -> None:
         # IMMUTABLE
-        self.x: float = x
+        self.x: int = math.trunc(x)
         "x-coordinate of the keypoint"
-        self.y: float = y
+        self.y: int = math.trunc(y)
         "y-coordinate of the keypoint"
-        self.confidence: float = confidence
+        self.confidence: float = round(confidence, 3)
         "confidence score of the keypoint detection"
 
     def __repr__(self) -> str:
-        return f"Keypoint(x={self.x}, y={self.y}, confidence={self.confidence})"
+        return f"Keypoint(x={self.x}, y={self.y})"
 
     def check(self) -> bool:
         "verifies if well-defined"
         try:
-            assert 0 <= self.confidence <= 1
-            assert self.x >= 0 and self.y >= 0
+            # assert 0 <= self.confidence <= 1
+            assert (
+                self.x >= 0
+                and self.y >= 0
+                and self.confidence >= 0
+                and self.confidence <= 1
+            )
         except AssertionError:
             return False
         return True
