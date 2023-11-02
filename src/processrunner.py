@@ -18,12 +18,14 @@ class ProcessRunner:
         video_path,
         players_tracking,
         ball_tracking,
+        pose_json,
         output_video_path,
         output_video_path_reenc,
     ):
         self.video_path = video_path
         self.players_tracking = players_tracking
         self.ball_tracking = ball_tracking
+        self.pose_json = pose_json
         self.output_video_path = output_video_path
         self.output_video_path_reenc = output_video_path_reenc
         self.state: GameState = GameState()
@@ -32,6 +34,7 @@ class ProcessRunner:
         "Runs parse module over SORT (and pose later) outputs to update GameState"
         parse.parse_sort_output(self.state, self.players_tracking)
         parse.parse_sort_output(self.state, self.ball_tracking)
+        parse.parse_pose_output(self.state, self.pose_json)
 
     def run_possession(self):
         self.state.recompute_possesssions()

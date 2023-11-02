@@ -35,7 +35,7 @@ class ModelRunner:
         self.pose_estimator = PoseEstimator(video_path=video_path)
         self.people_out = "tmp/people.txt"
         self.ball_out = "tmp/ball.txt"
-        self.pose_out = "tmp/pose.txt"
+        self.pose_out = "tmp/pose_data.json"
 
     def drop_frames(self, input_path) -> str:
         """

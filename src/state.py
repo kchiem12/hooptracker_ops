@@ -2,6 +2,7 @@
 Module containing state of game statistics
 """
 from enum import Enum
+from pose_estimation.pose_estimate import KeyPointNames
 import sys
 
 
@@ -75,7 +76,7 @@ class Box:
         return inter.area()
 
     def contains(self, box) -> bool:
-        return self.area_of_intersection(box) >= 0.5*box.area()
+        return self.area_of_intersection(box) >= 0.5 * box.area()
         # self.area_of_intersection(box) == min(box.area(), self.area())
 
     def intersects(self, box) -> bool:
@@ -217,10 +218,23 @@ class PlayerFrame:
         self.keypoints: dict[str, Keypoint] = {}
         "keypoints of the player"
 
-    def set_keypoints(self, keypoints_data: dict) -> None:
+    def set_keypoints(self, keypoints: list, confidences: list) -> None:
         "Sets the keypoints for the player"
-        for key, value in keypoints_data.items():
-            x, y, confidence = value
+        try:
+            
+            assert len(keypoints) == len(confidences)
+            assert len(keypoints) == len(KeyPointNames.list)
+        except Exception as e:
+            print(len(keypoints))
+            print(len(confidences))
+            print(len(KeyPointNames.list))
+            print("Could not load keypoints, list length error")
+            return
+
+        for i in range(len(keypoints)):
+            x, y = keypoints[i]
+            confidence = confidences[i]
+            key = KeyPointNames.list[i]
             self.keypoints[key] = Keypoint(x, y, confidence)
 
     def check(self) -> bool:

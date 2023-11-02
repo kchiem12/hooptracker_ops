@@ -5,6 +5,7 @@ models outputs into the state
 from state import GameState, Frame, ObjectType, Box
 import json
 
+
 def parse_sort_output(state: GameState, sort_output) -> None:
     """
     Reads the SORT output and updates state.states frame-by-frame.
@@ -48,6 +49,7 @@ def parse_sort_output(state: GameState, sort_output) -> None:
 
         b += 1  # process next line
 
+
 def parse_pose_output(state: GameState, pose_data_json: str) -> None:
     """
     Parses pose data and updates the player frames in the game state.
@@ -75,7 +77,7 @@ def parse_pose_output(state: GameState, pose_data_json: str) -> None:
             continue
 
         # Retrieve the list of persons (players) from the current frame's data. If not found, default to an empty list.
-        frame_persons = frame_data.get('persons', [])
+        frame_persons = frame_data.get("persons", [])
         if not frame_persons:
             # If there are no persons found in the frame, print a message and continue to the next iteration.
             print("No persons data found in this frame")
@@ -84,7 +86,7 @@ def parse_pose_output(state: GameState, pose_data_json: str) -> None:
         # Iterate through each person in the frame.
         for person in frame_persons:
             # Try to retrieve the bounding box of the person. If not found, print an error message and continue to the next iteration.
-            bounding_box = person.get('box')
+            bounding_box = person.get("box")
             if bounding_box is None:
                 print("No bounding box data found for this person")
                 continue
@@ -105,6 +107,6 @@ def parse_pose_output(state: GameState, pose_data_json: str) -> None:
 
             # If a likely player is found, set the keypoints for that player. Otherwise, print a message.
             if likely_id[0] is not None:
-                frame.players[likely_id[0]].set_keypoints(person.get('keypoints'))
+                frame.players[likely_id[0]].set_keypoints(person.get("keypoints"), person.get("confidences"))
             else:
                 print("No likely player found for this person")

@@ -50,6 +50,7 @@ def main(video_path: str, results_out: str = "tmp/results.txt") -> None:
         video_path,
         people_output,
         ball_output,
+        pose_output,
         output_video_path,
         output_video_path_reenc,
     )

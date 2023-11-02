@@ -43,6 +43,7 @@ pip3 install -r requirements.txt
 ```
 
 Enable AWS connection by pasting the .env file into the repo.
+Install FFMPEG.
 
 Start the server backend by running
 ```
