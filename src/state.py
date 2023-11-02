@@ -6,6 +6,7 @@ from pose_estimation.pose_estimate import KeyPointNames
 import sys
 import math
 
+
 # maintains dictionary functionality, if desired:
 def todict(obj):
     "to dictionary, recursively"
@@ -221,7 +222,6 @@ class PlayerFrame:
     def set_keypoints(self, keypoints: list, confidences: list) -> None:
         "Sets the keypoints for the player"
         try:
-            
             assert len(keypoints) == len(confidences)
             assert len(keypoints) == len(KeyPointNames.list)
         except Exception as e:
@@ -235,7 +235,7 @@ class PlayerFrame:
             x, y = keypoints[i]
             confidence = confidences[i]
             key = KeyPointNames.list[i]
-            self.keypoints[key] = KeyPoint(x, y, confidence)
+            self.keypoints[key] = Keypoint(x, y, confidence)
 
     def check(self) -> bool:
         "verifies if well-defined"
@@ -258,14 +258,14 @@ class Keypoint:
     Keypoint class containing the coordinates and confidence of a keypoint
     """
 
-    def __init__(self, x: float, y: float) -> None:
+    def __init__(self, x: float, y: float, confidence: float) -> None:
         # IMMUTABLE
         self.x: int = math.trunc(x)
         "x-coordinate of the keypoint"
         self.y: int = math.trunc(y)
         "y-coordinate of the keypoint"
-        # self.confidence: float = confidence
-        # "confidence score of the keypoint detection"
+        self.confidence: float = round(confidence, 3)
+        "confidence score of the keypoint detection"
 
     def __repr__(self) -> str:
         return f"Keypoint(x={self.x}, y={self.y})"
@@ -274,10 +274,16 @@ class Keypoint:
         "verifies if well-defined"
         try:
             # assert 0 <= self.confidence <= 1
-            assert self.x >= 0 and self.y >= 0
+            assert (
+                self.x >= 0
+                and self.y >= 0
+                and self.confidence >= 0
+                and self.confidence <= 1
+            )
         except AssertionError:
             return False
         return True
+
 
 class Frame:
     "Frame class containing frame-by-frame information"
