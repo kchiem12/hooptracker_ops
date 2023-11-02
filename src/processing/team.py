@@ -44,10 +44,10 @@ def split_team(state: GameState):
     labels, _ = sparest_cut_weighted(graph)
     assert len(labels) == n
 
-    state.team1.clear()
-    state.team2.clear()
+    state.team1.players.clear()
+    state.team2.players.clear()
     for i in range(n):
         if labels[i] == 0:
-            state.team1.add(p_list[i])
+            state.team1.players.add(p_list[i])
         else:  # label[i] == 1
-            state.team2.add(p_list[i])
+            state.team2.players.add(p_list[i])

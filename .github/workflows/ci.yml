@@ -20,11 +20,16 @@ jobs:
         pip install -r requirements.txt
         sudo apt-get install -y ffmpeg
     - name: Initialising AWS credentials
-      run: cat /home/runner/work/Ball-101/Ball-101/.env | base64
-    - name: Putting data
+      run: cat ${{github.workspace}}/.env | base64
+    - name: Setting AWS credentials
       env:
         DATA: ${{ secrets.AWS_ENV }}
-      run: echo $DATA >> /home/runner/work/Ball-101/Ball-101/.env
+      run: echo $DATA >> ${{github.workspace}}/.env
     - name: Run CI tests
       run: |
-        python src/main.py data/training_data.mp4
+        python src/main.py 
+        if [ ! -f ${{github.workspace}}/tmp/court_video_reenc.mp4 ]; then
+          echo "model run failed: output does not exist"
+          exit 1
+        fi
+

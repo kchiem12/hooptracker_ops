@@ -5,9 +5,7 @@ import cv2 as cv
 import random
 import os
 import numpy as np
-import subprocess
-import sys
-
+from ffmpy import FFmpeg
 from state import GameState
 
 
@@ -23,39 +21,14 @@ class VideoRender:
         """
         Re-encodes a MPEG4 video file to H.264 format. Overrides existing output videos if present.
         Deletes the unprocessed video when complete.
-        Ensures ffmpeg dependency is installed
         """
 
-        if sys.platform != "darwin":
-            print("Designed to install dependency for macOS")
-        else:
-            try:
-                # check if it is installed already
-                subprocess.run(
-                    ["brew", "list", "ffmpeg"],
-                    check=True,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                )
-            except:
-                # install dependency
-                print("Installing ffmpeg")
-                try:
-                    subprocess.run(
-                        ["brew", "install", "ffmpeg"],
-                        check=True,
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
-                    )
-                except:
-                    print("Error installing ffmpeg")
-                    return
-
-        reencode_command = (
-            f"ffmpeg -y -i {input_path} -vcodec libx264 -c:a copy {output_path}"
+        ff = FFmpeg(
+            inputs={input_path: "-y"},
+            outputs={output_path: "-c:a copy -c:v libx264"},
         )
-        os.system(reencode_command)
-        # os.remove(input_path)
+        ff.run()
+        os.remove(input_path)
 
     def render_video(self, state: GameState, filename: str, fps: int = 30):
         """

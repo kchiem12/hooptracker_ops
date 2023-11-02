@@ -2,6 +2,7 @@
 Module containing state of game statistics
 """
 from enum import Enum
+from pose_estimation.pose_estimate import KeyPointNames
 import sys
 import math
 
@@ -75,7 +76,8 @@ class Box:
         return inter.area()
 
     def contains(self, box) -> bool:
-        return self.area_of_intersection(box) == box.area()
+        return self.area_of_intersection(box) >= 0.5 * box.area()
+        # self.area_of_intersection(box) == min(box.area(), self.area())
 
     def intersects(self, box) -> bool:
         return self.area_of_intersection(box) != 0
@@ -216,12 +218,24 @@ class PlayerFrame:
         self.keypoints: dict[str, Keypoint] = {}
         "keypoints of the player"
 
-    def set_keypoints(self, keypoints_data: list) -> None:
-        print(keypoints_data)
+    def set_keypoints(self, keypoints: list, confidences: list) -> None:
         "Sets the keypoints for the player"
-        for key, value in enumerate(keypoints_data):
-            x, y = value
-            self.keypoints[key] = Keypoint(x, y)
+        try:
+            
+            assert len(keypoints) == len(confidences)
+            assert len(keypoints) == len(KeyPointNames.list)
+        except Exception as e:
+            print(len(keypoints))
+            print(len(confidences))
+            print(len(KeyPointNames.list))
+            print("Could not load keypoints, list length error")
+            return
+
+        for i in range(len(keypoints)):
+            x, y = keypoints[i]
+            confidence = confidences[i]
+            key = KeyPointNames.list[i]
+            self.keypoints[key] = KeyPoint(x, y, confidence)
 
     def check(self) -> bool:
         "verifies if well-defined"
@@ -237,6 +251,7 @@ class PlayerFrame:
         except AssertionError:
             return False
         return True
+
 
 class Keypoint:
     """
@@ -287,8 +302,8 @@ class Frame:
         "dictionary of form {ball_[id] : BallFrame}"
         self.rim: Box = None  # ASSUMPTION: SINGLE RIM
         "bounding box of rim"
-        self.possesions: list[str] = []
-        "player in possession of ball"
+        self.possessions: list[str] = []
+        "player in possession of ball, area of intersection"
 
     def add_player_frame(self, id: int, xmin: int, ymin: int, xmax: int, ymax: int):
         "update players in frame given id and bounding boxes"
@@ -320,7 +335,7 @@ class Frame:
                 max_a = a
                 max_p = set()
                 max_p.add(p)
-        self.possesions = max_p
+        self.possessions = max_p
 
     def check(self) -> bool:
         "verifies if well-defined"
@@ -347,10 +362,37 @@ class PlayerState:
         """
         Player state containing
             frames: number frames player appeared in
-
+            field_goals_attempted: number of shots a player made
+            field_goals: number of made shots by a player
+            points: points scored by a player
+            field_goal_percentage: percentage of shots made by the player
         """
+
         # MUTABLE
         self.frames: int = 0
+        self.field_goals_attempted: int = 0
+        self.field_goals: int = 0
+        self.points: int = 0
+        self.field_goal_percentage: float = 0.0
+        self.passes: dict[int] = {}
+
+
+class TeamStats:
+    "Object of storing team statistics"
+
+    def __init__(self) -> None:
+        """ """
+        self.players: set = set()
+        self.shots_attempted: int = 0
+        self.shots_made: int = 0
+        self.points: int = 0
+        self.field_goal_percentage: float = 0.0
+
+    def compute_field_goal_percentage(self):
+        if self.shots_attempted == 0:
+            self.field_goal_percentage = 0
+        else:
+            self.field_goal_percentage = self.shots_made / self.shots_attempted
 
 
 class BallState:
@@ -412,8 +454,8 @@ class GameState:
             possessions: list of PossessionInterval
             passes: dictionary of passes
             shots: list of shots by player
-            team1: set of players on one team
-            team2: est of players on other team
+            team1: object TeamStats for team1
+            team2: object TeamStats for team2
         """
         # MUTABLE
 
@@ -435,8 +477,57 @@ class GameState:
         self.shots: list[Interval] = []
         " list of shots: [(player_[id],start,end)]"
 
-        self.team1: set = set()
-        self.team2: set = set()
+        self.shot_attempts: list[ShotAttempt] = []
+        "list of ShotAttempts: [ShotAttempt]"
+
+        self.team1: TeamStats = TeamStats()
+        self.team2: TeamStats = TeamStats()
+
+    def populate_team_stats(self):
+        """
+        Populates the scores and shots made/attempted for each team
+        """
+        for shot in self.shot_attempts:
+            if shot.made:
+                if shot.playerid in self.team1.players:
+                    self.team1.shots_made += 1
+                    self.team1.points += shot.value()
+                else:
+                    self.team2.shots_made += 1
+                    self.team2.points += shot.value()
+
+            if shot.playerid in self.team1.players:
+                self.team1.shots_attempted += 1
+            else:
+                self.team2.shots_attempted += 1
+
+        self.team1.compute_field_goal_percentage()
+        self.team2.compute_field_goal_percentage()
+
+    def populate_players_stats(self):
+        """
+        Iterates through all self.shot_attempts and updates the PlayerState with
+        their respective shot attempts (whether made or not) and points scored
+        """
+        for shot in self.shot_attempts:
+            if shot.made:
+                self.players[shot.playerid].field_goals += 1
+                self.players[shot.playerid].points += shot.value()
+
+            self.players[shot.playerid].field_goals_attempted += 1
+
+            if self.players[shot.playerid].field_goals_attempted == 0:
+                self.players[shot.playerid].field_goal_percentage = 0
+            else:
+                self.players[shot.playerid].field_goal_percentage = (
+                    self.players[shot.playerid].field_goals
+                    / self.players[shot.playerid].field_goals_attempted
+                )
+
+        # populates the player pass dictionary for each Player
+        for p in self.passes:
+            for c in self.passes[p]:
+                self.players[p].passes.update({c: self.passes[p][c]})
 
     def recompute_frame_count(self):
         "recompute frame count of all players in frames"
@@ -447,6 +538,25 @@ class GameState:
                 if pid not in self.players:
                     self.players.update({pid: PlayerState()})
                 self.players.get(pid).frames += 1
+
+    def recompute_possesssions(self):
+        "naively compute frame-by-frame possession of ball"
+        for frame in self.frames:
+            if frame.ball is None:
+                frame.possessions = []
+                continue
+            lst: list[(str, int)] = []
+            ball: Box = frame.ball.box
+            for id, p in frame.players.items():
+                a: int = p.box.area_of_intersection(ball)
+                if a == 0:
+                    continue
+                lst.append((id, a))
+
+            sorted_lst: list[(str, int)] = sorted(
+                lst, key=lambda x: x[1]
+            )  # sorted from least to greatest intersect
+            frame.possessions = [x for (x, _) in sorted_lst]
 
     def recompute_possession_list(self, threshold=20, join_threshold=20):
         """
@@ -464,7 +574,7 @@ class GameState:
 
     def grow_poss(self, lst: list) -> None:
         """
-        modifies posssession list [lst] with more possession, if avaiable
+        modifies possession list [lst] with more possession, if available
 
         """
         i = 0
@@ -472,7 +582,7 @@ class GameState:
         while fi < len(self.frames):
             f: Frame = self.frames[fi]
             frame = f.frameno
-            poss = f.possesions
+            poss = f.possessions
 
             if i >= len(lst):
                 s = sys.maxsize  # ensures new poss frame added
@@ -484,8 +594,8 @@ class GameState:
                 fi += 1  # next frame
                 continue
             else:  # frame < start
-                p = poss.pop()  # arbitrary player
-                lst.insert(i, (p, frame, frame))
+                p = poss.pop()  # pop last player, most likely intersect
+                lst.insert(i, Interval(p, frame, frame))
                 i += 1  # next interval
 
     def join_poss(self, lst: list, threshold: int = 20):  # possiblility of mapreduce
@@ -519,7 +629,9 @@ class GameState:
         for k in list(self.players.keys()):
             v: PlayerState = self.players.get(k)
             if v.frames < threshold:
-                self.players.pop(k)
+                self.players.pop(k, None)
+                for frame in self.frames:
+                    frame.players.pop(k, None)
 
     def recompute_pass_from_possession(self):
         "Recompute passes naively from possession list"
@@ -534,63 +646,3 @@ class GameState:
             p1 = self.possessions[i].playerid
             p2 = self.possessions[i + 1].playerid
             self.passes[p1][p2] += 1
-
-    ## TODO Update for backend
-    def update_scores(self, madeshot_list):
-        """
-        TODO check for correctness + potentially move out of state.py
-        Description:
-            Returns a list of made shots with each shot represented as a tuple
-            and updates each team's and individual's scores.
-        Input:
-            madeshot_list [list]: list of made shot tuples
-            (frame, 0 if missed, 1 if made)
-        Effect:
-            Updates self.score1, self.score2.
-        """
-        madeshots = []
-        mdsh_lst = []
-        # Set counter to first made shot (where madeshot_list[counter][1] != 0)
-        counter = 0
-        for shot in madeshot_list:
-            if shot[1] != 0:
-                mdsh_lst.append(shot)
-
-        # Iterate through possession list and find who made the shot
-        # TODO what if madeshot_lst is empty?
-        for pos in self.possession_list:
-            if pos[2] >= mdsh_lst[counter][0]:
-                madeshots.append((pos[0], mdsh_lst[counter][0]))
-                counter += 1
-                if counter >= len(mdsh_lst):
-                    break
-        # For each shot made update the player's and team's score
-        for shot in madeshots:
-            self.players[shot[0]]["shots"] += 1
-            self.players[shot[0]]["points"] += 2
-            if shot[0] in self.team1:
-                self.score1 += 2
-            else:
-                self.score2 += 2
-
-    # def __repr__(self) -> str:
-    #     result_dict = {
-    #         "Rim coordinates": str(self.rim) if len(self.rim) > 0 else "None",
-    #         "Backboard coordinates": str(self.backboard)
-    #         if len(self.rim) > 0
-    #         else "None",
-    #         "Court lines coordinates": "None",
-    #         "Number of frames": str(len(self.frames)),
-    #         "Number of players": str(len(self.players)),
-    #         "Number of passes": str(len(self.passes)),
-    #         "Team 1": str(self.team1),
-    #         "Team 2": str(self.team2),
-    #         "Team 1 Score": str(self.score1),
-    #         "Team 2 Score": str(self.score2),
-    #         "Team 1 Possession": str(self.team1_pos),
-    #         "Team 2 Possession": str(self.team2_pos),
-    #     }
-    #     for player in self.players:
-    #         result_dict[player] = str(self.players[player])
-
-    #     return str(result_dict)

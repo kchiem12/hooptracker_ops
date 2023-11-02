@@ -18,6 +18,7 @@ class ProcessRunner:
         video_path,
         players_tracking,
         ball_tracking,
+        pose_json,
         output_video_path,
         output_video_path_reenc,
         processed_video_path
@@ -25,6 +26,7 @@ class ProcessRunner:
         self.video_path = video_path
         self.players_tracking = players_tracking
         self.ball_tracking = ball_tracking
+        self.pose_json = pose_json
         self.output_video_path = output_video_path
         self.output_video_path_reenc = output_video_path_reenc
         self.state: GameState = GameState()
@@ -34,18 +36,20 @@ class ProcessRunner:
         "Runs parse module over SORT (and pose later) outputs to update GameState"
         parse.parse_sort_output(self.state, self.players_tracking)
         parse.parse_sort_output(self.state, self.ball_tracking)
-        parse.parse_pose_output(self.state, "tmp/pose_data.json")
+        parse.parse_pose_output(self.state, self.pose_json)
 
     def run_possession(self):
-        self.state.filter_players(threshold=100)
-        self.state.recompute_possession_list(threshold=20, join_threshold=20)
+        self.state.recompute_possesssions()
+        threshold = min(100, len(self.state.frames) / 3)  # in case of short video
+        self.state.filter_players(threshold=threshold)
+        self.state.recompute_possession_list(threshold=10, join_threshold=20)
         self.state.recompute_pass_from_possession()
 
     def run_team_detect(self):
         team.split_team(self.state)
 
     def run_shot_detect(self):
-        shot.shots(self.state, window=5)
+        shot.shots(self.state, window=10)
 
     def run_courtline_detect(self):
         """Runs courtline detection."""
@@ -67,19 +71,28 @@ class ProcessRunner:
         Runs all processing and statistics.
         """
         self.run_parse()
+        print("parsing complete!")
         self.run_possession()
+        print("possession detection complete!")
         self.run_team_detect()
+        print("team detection complete!")
         self.run_shot_detect()
-        print('G, T, S detect fine')
+        print("shot detection complete!")
         self.run_courtline_detect()
-        print('courtline detect fine')
+        print("court detection complete!")
         self.run_video_render()
-        print('video render fine')
+        print('court render complete!')
         self.run_video_processor()
-        print('video processing complete')
+        print('stats video render complete!')
 
     def get_results(self):
         """
         Returns string of processed statistics.
         """
+        print(
+            "PLAYERS", str(state.todict(self.state.players))
+        )  # print the entire GameState
+        print("PASSES", str(state.todict(self.state.passes)))
+        print("POSSESSIONS", str(state.todict(self.state.possessions)))
+
         return str(state.todict(self.state))
