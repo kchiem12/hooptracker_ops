@@ -3,7 +3,7 @@ Runner module for processing and statistics
 """
 import state
 from state import GameState
-from processing import parse, court, render, shot, team
+from processing import parse, court, render, shot, team, video
 
 
 class ProcessRunner:
@@ -20,6 +20,7 @@ class ProcessRunner:
         ball_tracking,
         output_video_path,
         output_video_path_reenc,
+        processed_video_path
     ):
         self.video_path = video_path
         self.players_tracking = players_tracking
@@ -27,6 +28,7 @@ class ProcessRunner:
         self.output_video_path = output_video_path
         self.output_video_path_reenc = output_video_path_reenc
         self.state: GameState = GameState()
+        self.processed_video_path = processed_video_path
 
     def run_parse(self):
         "Runs parse module over SORT (and pose later) outputs to update GameState"
@@ -56,6 +58,10 @@ class ProcessRunner:
         videoRender.render_video(self.state, self.output_video_path)
         videoRender.reencode(self.output_video_path, self.output_video_path_reenc)
 
+    def run_video_processor(self):
+        video_creator = video.VideoCreator(self.state, self.video_path, self.processed_video_path)
+        video_creator.run()
+
     def run(self):
         """
         Runs all processing and statistics.
@@ -69,6 +75,8 @@ class ProcessRunner:
         print('courtline detect fine')
         self.run_video_render()
         print('video render fine')
+        self.run_video_processor()
+        print('video processing complete')
 
     def get_results(self):
         """
