@@ -2,6 +2,11 @@ import cv2
 from state import GameState
 
 class VideoCreator:
+    TEAM1_COLOR = (0, 255, 0)
+    TEAM2_COLOR = (255, 0, 0)
+    BALL_COLOR = (0, 0, 255)
+    RIM_COLOR = (0, 255, 255)
+
     def __init__(self, game_state: GameState, video_path: str, output_path: str) -> None:
         self.state = game_state
         self.video_path = video_path
@@ -18,6 +23,14 @@ class VideoCreator:
             if isinstance(keypoint, (tuple, list)) and len(keypoint) == 2:
                 x, y = keypoint
                 cv2.circle(frame, (int(x), int(y)), 5, color, -1)
+
+    def get_player_color(self, player_id):
+        if player_id in self.state.team1.players:
+            return self.TEAM1_COLOR
+        elif player_id in self.state.team2.players:
+            return self.TEAM2_COLOR
+        else:
+            return (255, 255, 255)
 
     def run(self):
         cap = cv2.VideoCapture(self.video_path)
@@ -48,12 +61,17 @@ class VideoCreator:
             if game_frame and game_frame.frameno <= video_timestamp:
                 # Draw bounding boxes for players
                 for player_id, player_frame in game_frame.players.items():
-                    self.draw_boxes(frame, [player_frame.box], (0, 255, 0), label=player_id)
-                    self.draw_keypoints(frame, player_frame.keypoints, (0, 255, 0))
+                    player_color = self.get_player_color(player_id)
+                    self.draw_boxes(frame, [player_frame.box], player_color, label=player_id)
+                    self.draw_keypoints(frame, player_frame.keypoints, player_color)
 
                 # Draw bounding box for ball
                 if game_frame.ball:
-                    self.draw_boxes(frame, [game_frame.ball.box], (0, 0, 255), label="Ball")
+                    self.draw_boxes(frame, [game_frame.ball.box], self.BALL_COLOR, label="Ball")
+
+                # Draw bounding box for rim
+                if game_frame.rim:
+                    self.draw_boxes(frame, [game_frame.rim], self.RIM_COLOR, label="Rim")
 
                 game_frame_index += 1
 
