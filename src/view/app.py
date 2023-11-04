@@ -42,7 +42,7 @@ def process_video(video_file):
     if video_file is None:
         return False
     r = requests.post(
-        SERVER_URL + "upload", files={"video_file": video_file}, timeout=60
+        SERVER_URL + "upload", files={"video_file": video_file}, timeout=120
     )
     if r.status_code == 200:
         print("Successfully uploaded file")
