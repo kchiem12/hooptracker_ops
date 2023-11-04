@@ -4,6 +4,7 @@ import json
 from ultralytics import YOLO
 
 
+
 class KeyPointNames:
     list = [
         "nose",

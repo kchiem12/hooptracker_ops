@@ -41,7 +41,7 @@ def main(video_path: str, results_out: str = "tmp/results.txt") -> None:
     model_vars = config["model_vars"]
 
     modelrunner = ModelRunner(video_path, model_vars)
-    modelrunner.run()
+    modelrunner.run() # COMMENT THIS LINE TO NOT RUN MODEL
     people_output, ball_output, pose_output = modelrunner.fetch_output()
     output_video_path = "tmp/court_video.mp4"
     output_video_path_reenc = "tmp/court_video_reenc.mp4"
@@ -54,7 +54,7 @@ def main(video_path: str, results_out: str = "tmp/results.txt") -> None:
         pose_output,
         output_video_path,
         output_video_path_reenc,
-        processed_video_path
+        processed_video_path,
     )
 
     processrunner.run()

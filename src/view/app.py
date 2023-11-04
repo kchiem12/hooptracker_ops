@@ -115,7 +115,7 @@ def loading_page():
 
     # Load results page when done
     change_state(state)
-    st.experimental_rerun()
+    st.rerun()
 
 
 def results_page():
