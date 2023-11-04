@@ -21,7 +21,7 @@ class ProcessRunner:
         pose_json,
         output_video_path,
         output_video_path_reenc,
-        processed_video_path
+        processed_video_path,
     ):
         self.video_path = video_path
         self.players_tracking = players_tracking
@@ -35,13 +35,14 @@ class ProcessRunner:
     def run_parse(self):
         "Runs parse module over SORT (and pose later) outputs to update GameState"
         parse.parse_sort_output(self.state, self.players_tracking)
+        threshold = min(300, len(self.state.frames) / 3)  # in case of short video
+        self.state.filter_players(threshold=threshold)
+
         parse.parse_sort_output(self.state, self.ball_tracking)
         parse.parse_pose_output(self.state, self.pose_json)
 
     def run_possession(self):
         self.state.recompute_possesssions()
-        threshold = min(100, len(self.state.frames) / 3)  # in case of short video
-        self.state.filter_players(threshold=threshold)
         self.state.recompute_possession_list(threshold=10, join_threshold=20)
         self.state.recompute_pass_from_possession()
 
@@ -53,7 +54,7 @@ class ProcessRunner:
 
     def run_courtline_detect(self):
         """Runs courtline detection."""
-        c = court.Render(self.video_path)
+        c = court.Render(self.video_path, display_images=False)
         self.homography = c.get_homography()
 
     def run_video_render(self):
@@ -63,7 +64,9 @@ class ProcessRunner:
         videoRender.reencode(self.output_video_path, self.output_video_path_reenc)
 
     def run_video_processor(self):
-        video_creator = video.VideoCreator(self.state, self.video_path, self.processed_video_path)
+        video_creator = video.VideoCreator(
+            self.state, self.video_path, self.processed_video_path
+        )
         video_creator.run()
 
     def run(self):
@@ -83,7 +86,7 @@ class ProcessRunner:
         self.run_video_render()
         print('court render complete!')
         self.run_video_processor()
-        print('stats video render complete!')
+        print("stats video render complete!")
 
     def get_results(self):
         """

@@ -71,7 +71,7 @@ class Render:
         "Final processed image of court edges"
         self._TRUTH_COURT_MAP = cv.imread(self._TRUE_PATH, cv.IMREAD_GRAYSCALE)
         "True court map of half court"
-
+        print(1)
         self._HSV_BINNING = True  # choose either HSV binning or YCrCb binning
         if self._HSV_BINNING:
             self._index = (0, 1)
@@ -83,13 +83,15 @@ class Render:
             self._one_max = 256.0
             self._two_max = 256.0
             self._COURT_IMG = self._YCRCB_COURT
-
+        print(2)
         self._HOMOGRAPHY = None
         "Homography matrix to transform court to minimaped version"
 
         if display_images:
+            print(3)
             self._HOMOGRAPHY = self._detect_courtlines_and_display()
         else:
+            print(33)
             self._HOMOGRAPHY = self._detect_courtlines()
 
     def get_homography(self):
@@ -121,7 +123,7 @@ class Render:
         canny_edges = self._get_canny(self._GRAY_COURT)
         masked_edges = self._apply_mask(canny_edges, mask)
         masked_bgr = self._apply_mask(self._BGR_COURT, mask)
-        hough_lines = self._get_hough(masked_edges, threshold=180)
+        hough_lines = self._get_hough(masked_edges, threshold=300)
         hough = self._apply_hough(self._BGR_COURT, hough_lines)
         thick_masked_edges = self._thicken_edges(masked_edges, iterations=1)
         self._MASK_COURT_EDGES = thick_masked_edges.copy()

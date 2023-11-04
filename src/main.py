@@ -2,9 +2,10 @@
 Main control loop module
 """
 import yaml
-import sys
 from modelrunner import ModelRunner
 from processrunner import ProcessRunner
+import argparse
+
 
 # before main is called:
 # frontend boots up, awaits user to upload a video
@@ -28,7 +29,7 @@ def load_config(path):
     return config
 
 
-def main(video_path: str, results_out: str = "tmp/results.txt") -> None:
+def main(source: str, results_out: str, results_folder=None) -> None:
     """
     Sequentially initialises and runs model running and processing tasks.
     Input:
@@ -40,15 +41,16 @@ def main(video_path: str, results_out: str = "tmp/results.txt") -> None:
     config = load_config("config.yaml")
     model_vars = config["model_vars"]
 
-    modelrunner = ModelRunner(video_path, model_vars)
-    modelrunner.run() # COMMENT THIS LINE TO NOT RUN MODEL
+    modelrunner = ModelRunner(source, model_vars, out=results_folder)
+    if not results_folder:
+        modelrunner.run()
     people_output, ball_output, pose_output = modelrunner.fetch_output()
     output_video_path = "tmp/court_video.mp4"
     output_video_path_reenc = "tmp/court_video_reenc.mp4"
     processed_video_path = "tmp/processed_video.mp4"
 
     processrunner = ProcessRunner(
-        video_path,
+        source,
         people_output,
         ball_output,
         pose_output,
@@ -64,9 +66,29 @@ def main(video_path: str, results_out: str = "tmp/results.txt") -> None:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) == 2:
-        main(sys.argv[1])
+    parser = argparse.ArgumentParser(description="Runs backend loop")
+    parser.add_argument("-s", "--source", help="runs backend on specified file ")
+    parser.add_argument("-o", "--out", help="specify where to save file")
+    parser.add_argument(
+        "-p",
+        "--process_only",
+        help="skips model running and runs from results stored tmp/save. specifiy processed results directory",
+    )
+    args = parser.parse_args()
+    s = "data/training_data.mp4"
+    p = None
+    o = "tmp/results.txt"
+
+    if args.source:
+        if args.process_only:
+            p = args.process_only
+        s = args.source
     else:
-        main(
-            "data/training_data.mp4"
-        )  # Pass the first command-line argument to the main function
+        print("============Running default script for backend...==============")
+    if args.out:
+        o = args.out
+    print(
+        f"============Running backend on {s}, results saved to {o}, results folder: {p}...=============="
+    )
+
+    main(source=s, results_out=o, results_folder=p)

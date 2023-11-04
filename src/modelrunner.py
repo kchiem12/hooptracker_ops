@@ -9,6 +9,7 @@ from ultralytics import YOLO
 from pathlib import Path
 import multiprocessing as mp
 import time
+import os
 import sys
 
 FILE = Path(__file__).resolve()
@@ -29,13 +30,15 @@ class ModelRunner:
     Returns 2 output files on player and ball detections
     """
 
-    def __init__(self, video_path, model_vars) -> None:
+    def __init__(self, video_path, model_vars, out=None) -> None:
+        if out == None:
+            out = "tmp"
         self.video_path = video_path
         self.frame_reduction_factor = model_vars["frame_reduction_factor"]
         self.pose_estimator = PoseEstimator(video_path=video_path)
-        self.people_out = "tmp/people.txt"
-        self.ball_out = "tmp/ball.txt"
-        self.pose_out = "tmp/pose_data.json"
+        self.people_out = os.path.join(out, "people.txt")
+        self.ball_out = os.path.join(out, "ball.txt")
+        self.pose_out = os.path.join(out, "pose_data.json")
 
     def drop_frames(self, input_path) -> str:
         """
@@ -112,8 +115,9 @@ class ModelRunner:
         print("==============Start pose estimation!============")
         model = YOLO("src/pose_estimation/best.pt")
         print("model", type(model))
-        results = model(source=self.video_path, show=False, conf=0.3,
-                        stream=True, verbose = True)
+        results = model(
+            source=self.video_path, show=False, conf=0.3, stream=True, verbose=True
+        )
         print("results", type(results))
 
         self.pose_estimator.estimate_pose(results=results)

@@ -1,5 +1,5 @@
 import cv2
-from state import GameState, Keypoint
+from state import GameState, Keypoint, ShotAttempt, Interval
 import random
 
 
@@ -11,8 +11,9 @@ class VideoCreator:
     TEAM2_COLOR = (255, 0, 0)
     BALL_COLOR = (0, 0, 255)
     RIM_COLOR = (0, 255, 255)
-    HIGHLIGHT_COLOR = (255, 255, 0)
-    LINE_WIDTH = 1
+    POSSESSION_COLOR = (100, 100, 0)
+    SHOOTING_COLOR = (255, 255, 0)
+    LINE_WIDTH = 2
     LABEL_SIZE = 2
     CIRCLE_RADIUS = 3
 
@@ -30,7 +31,13 @@ class VideoCreator:
     def draw_boxes(self, frame, boxes, color, label=""):
         for box in boxes:
             # Draw rectangle around each box with the specified color
-            cv2.rectangle(frame, (box.xmin, box.ymin), (box.xmax, box.ymax), color, self.LINE_WIDTH)
+            cv2.rectangle(
+                frame,
+                (box.xmin, box.ymin),
+                (box.xmax, box.ymax),
+                color,
+                self.LINE_WIDTH,
+            )
             # If a label is provided, put the label on the frame above the box
             if label:
                 cv2.putText(
@@ -62,64 +69,32 @@ class VideoCreator:
         return tuple([bound(x + rand()) for x in color])
 
     # Determine the color of a player's box based on their team
-    def get_player_color(self, player_id):
-        if player_id not in self.player_colors:
+    def get_player_color(self, player_id, shot: ShotAttempt, poss: Interval):
+        if shot and player_id == shot.playerid:
+            return self.SHOOTING_COLOR
+        if poss and player_id == poss.playerid:
+            return self.POSSESSION_COLOR
+
+        if not player_id in self.player_colors:
             c = (255, 255, 255)
             if player_id in self.state.team1.players:
                 c = self.vary_color(self.TEAM1_COLOR, 50)
             elif player_id in self.state.team2.players:
                 c = self.vary_color(self.TEAM2_COLOR, 50)
             self.player_colors.update({player_id: c})
+            return c
         else:
             return self.player_colors[player_id]
 
-    # Determine the label for a player based on possession and shot attempts
-    def get_player_label(self, player_id, frame_count):
+    def get_player_label(self, player_id: str, shot: ShotAttempt, poss: Interval):
+        "Determine the label for a player based on possession and shot attempts"
         label = player_id  # Default label is the player's ID
-
         append = ""
-
-        # Assign "In Possession" label if the player is in possession
-        for possession in self.state.possessions:
-            if (
-                possession.start <= frame_count <= possession.end
-                and possession.playerid == player_id
-            ):
-                append += " Possessor"
-
-        # Assign "Shooter" label if the player is attempting a shot
-        for shot_attempt in self.state.shot_attempts:
-            if (
-                shot_attempt.start <= frame_count <= shot_attempt.end
-                and shot_attempt.playerid == player_id
-            ):
-                append += " Shooter"
-
+        if shot and shot.playerid == player_id:
+            append += " Shoot"
+        if poss and poss.playerid == player_id:
+            append += " Poss"
         return label + append  # Return the label after checks
-
-    # Highlight possessions on the frame
-    def highlight_possessions(self, frame, frame_count, game_frame):
-        # Only the player in possession gets highlighted
-        for possession in self.state.possessions:
-            if possession.start <= frame_count <= possession.end:
-                player_id = possession.playerid
-                if player_id in game_frame.players:
-                    player_frame = game_frame.players[player_id]
-                    self.draw_boxes(frame, [player_frame.box], self.HIGHLIGHT_COLOR)
-                break  # Once the player in possession is found, no need to continue
-
-    # Highlight shot attempts on the frame
-    def highlight_shot_attempts(self, frame, current_frame, game_frame):
-        self.shot_attempt_active = False  # Reset flag for each frame
-        for shot_attempt in self.state.shot_attempts:
-            if shot_attempt.start <= current_frame <= shot_attempt.end:
-                self.shot_attempt_active = True  # Set flag if a shot attempt is active
-                if game_frame and game_frame.ball:
-                    self.draw_boxes(frame, [game_frame.ball.box], self.HIGHLIGHT_COLOR)
-                player_id = shot_attempt.playerid
-                if player_id in game_frame.players:
-                    player_frame = game_frame.players[player_id]
-                    self.draw_boxes(frame, [player_frame.box], self.HIGHLIGHT_COLOR)
 
     def run(self):
         # Capture video from the video path
@@ -144,26 +119,57 @@ class VideoCreator:
 
         # Read frames from GameState
         frames = self.state.frames
+        idx = 0  # for frames list
 
-        idx = 0
+        shots = self.state.shot_attempts
+        shot_idx = 0  # for shot list
+
+        posses = self.state.possessions
+        poss_idx = 0  # for possession list
         while cap.isOpened():
             if not ret:
                 break
             f = int(cap.get(cv2.CAP_PROP_POS_FRAMES))  # cv2 frame
-            while idx < len(frames) and frames[idx].frameno < f:  # get to right frame
+            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            if f % 100 == 0:
+                print(f"Processed video render frame {f}/{total_frames}.")
+
+            # catch up state frame
+            while idx < len(frames) and frames[idx].frameno < f:
                 idx += 1
-            use_state = idx < len(frames) and frames[idx].frameno == f
+            game_frame = (
+                frames[idx] if idx < len(frames) and frames[idx].frameno == f else None
+            )
+
+            # catch up shot_attempt
+            while shot_idx < len(shots) and shots[shot_idx].end < f:
+                shot_idx += 1
+            shot = (
+                shots[shot_idx]
+                if shot_idx < len(shots) and shots[shot_idx].start <= f
+                else None
+            )
+
+            # catch up possession interval
+            while poss_idx < len(posses) and posses[poss_idx].end < f:
+                poss_idx += 1
+            poss = (
+                posses[poss_idx]
+                if poss_idx < len(posses) and posses[poss_idx].start <= f
+                else None
+            )
 
             # Get the game frame data for the current frame count
-            game_frame = frames[idx] if use_state else None
 
             if game_frame:
                 # Draw boxes and labels for players
                 for player_id, player_frame in game_frame.players.items():
                     player_label = self.get_player_label(
-                        player_id, f
+                        player_id, shot, poss
                     )  # Determine label
-                    player_color = self.get_player_color(player_id)  # Determine color
+                    player_color = self.get_player_color(
+                        player_id, shot, poss
+                    )  # Determine color
                     self.draw_boxes(
                         frame, [player_frame.box], player_color, label=player_label
                     )
@@ -171,7 +177,7 @@ class VideoCreator:
 
                 # Draw box for the ball with or without label depending on shot attempt
                 if game_frame.ball:
-                    ball_label = "Ball" if not self.shot_attempt_active else ""
+                    ball_label = "Ball"
                     self.draw_boxes(
                         frame, [game_frame.ball.box], self.BALL_COLOR, label=ball_label
                     )
@@ -181,10 +187,6 @@ class VideoCreator:
                     self.draw_boxes(
                         frame, [game_frame.rim], self.RIM_COLOR, label="Rim"
                     )
-
-                # Process each frame to highlight possessions and shot attempts
-                self.highlight_possessions(frame, f, game_frame)
-                self.highlight_shot_attempts(frame, f, game_frame)
 
             # Display the current frame count on the frame
             cv2.putText(

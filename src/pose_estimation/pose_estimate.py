@@ -106,7 +106,7 @@ class PoseEstimator:
             )  # Extracting the confidences
             boxes = result.boxes.xyxy.numpy().tolist()  # Extracting bounding boxes
             frame_pose_data = {
-                "frame": frame_idx,
+                "frame": frame_idx + 1, # ASSUME NO FRAMES DROPPED TODO keep track with openCV
                 "persons": [],
                 "boxes": boxes,
                 "keypoints": keypoints.tolist(),

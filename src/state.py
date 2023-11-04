@@ -535,16 +535,7 @@ class GameState:
             for c in self.passes[p]:
                 self.players[p].passes.update({c: self.passes[p][c]})
 
-    def recompute_frame_count(self):
-        "recompute frame count of all players in frames"
-        for ps in self.players.values():  # reset to 0
-            ps.frames = 0
-        for frame in self.frames:
-            for pid in frame.players:
-                if pid not in self.players:
-                    self.players.update({pid: PlayerState()})
-                self.players.get(pid).frames += 1
-
+    
     def recompute_possesssions(self):
         "naively compute frame-by-frame possession of ball"
         for frame in self.frames:
@@ -628,6 +619,17 @@ class GameState:
                 lst.pop(i)
             else:
                 i += 1  # next interval
+
+    def recompute_frame_count(self):
+        "recompute frame count of all players in frames"
+        for ps in self.players.values():  # reset to 0
+            ps.frames = 0
+        for frame in self.frames:
+            for pid in frame.players:
+                if pid not in self.players:
+                    self.players.update({pid: PlayerState()})
+                self.players.get(pid).frames += 1
+
 
     def filter_players(self, threshold: int):
         "removes all players which appear for less than [threshold] frames"

@@ -70,6 +70,8 @@ class VideoRender:
         fi = 0
         # Loop through each time step
         for t in range(dur + 1):
+            if (t % 100 == 0):
+                print(f"Court render frame {t}/{dur}.")
             # Create a copy of the background image to draw the points on
             frame = background.copy()
 
