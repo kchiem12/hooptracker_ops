@@ -47,16 +47,12 @@ async def process_file(file_name: str):
     TODO change from local to cloud
     """
     try:
-        command = ["python", "src/main.py", file_name]
-        # Start the subprocess, capturing the standard output
-        # process = subprocess.Popen(command, stdout=subprocess.PIPE, universal_newlines=True)
-        # for line in process.stdout:
-        #     print(line, end="")
-        # process.wait()
+        command = ["python", "src/main.py", "--source", file_name]
         subprocess.run(command)
         return {"message": f"successfully processed {file_name}", "status": "success"}
     except Exception as ex:
         return {"error": str(ex)}
+
 
 # TODO Not being used RN
 @app.get("/download/{file_name}")
@@ -72,6 +68,7 @@ async def download_file(file_name: str, download_path: str):
         }
     except Exception as ex:
         return {"error": str(ex)}
+
 
 # TODO Not being used RN
 @app.get("/results")
