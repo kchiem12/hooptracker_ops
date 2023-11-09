@@ -116,6 +116,9 @@ def parse_pose_output(state: GameState, pose_data_json: str) -> None:
                 state_frame.players[likely_id[0]].set_keypoints(
                     person.get("keypoints"), person.get("confidences")
                 )
+                state_frame.players[likely_id[0]].set_angles(
+                    person.get("angles")
+                )
             else:
                 print("No likely player found for this person")
         p += 1  # next pose frame
