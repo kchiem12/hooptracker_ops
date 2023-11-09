@@ -2,7 +2,6 @@
 Module containing state of game statistics
 """
 from enum import Enum
-from pose_estimation.pose_estimate import KeyPointNames
 import sys
 import math
 
@@ -219,21 +218,19 @@ class PlayerFrame:
         self.keypoints: dict[str, Keypoint] = {}
         "keypoints of the player"
 
-    def set_keypoints(self, keypoints: list, confidences: list) -> None:
+    def set_keypoints(self, keypoints: list) -> None:
         "Sets the keypoints for the player"
         try:
-            assert len(keypoints) == len(confidences)
-            assert len(keypoints) == len(KeyPointNames.list)
+            assert len(keypoints) == len(KeyPointNames.list) * 2
         except Exception as e:
             print(len(keypoints))
-            print(len(confidences))
-            print(len(KeyPointNames.list))
+            print(len(KeyPointNames.list) * 2)
             print("Could not load keypoints, list length error")
             return
 
-        for i in range(len(keypoints)):
-            x, y = keypoints[i]
-            confidence = confidences[i]
+        for i in range(len(KeyPointNames.list)):
+            x, y = keypoints[2*i:2*i+2]
+            confidence = 1  # can put into confidence later
             key = KeyPointNames.list[i]
             self.keypoints[key] = Keypoint(x, y, confidence)
 
@@ -251,6 +248,41 @@ class PlayerFrame:
         except AssertionError:
             return False
         return True
+
+
+class KeyPointNames:
+    list = [
+        "nose",
+        "left_eye",
+        "right_eye",
+        "left_ear",
+        "right_ear",
+        "left_shoulder",
+        "right_shoulder",
+        "left_elbow",
+        "right_elbow",
+        "left_wrist",
+        "right_wrist",
+        "left_hip",
+        "right_hip",
+        "left_knee",
+        "right_knee",
+        "left_ankle",
+        "right_ankle",
+    ]
+
+
+class AngleNames:
+    list = [
+        "left_elbow",
+        "right_elbow",
+        "left_knee",
+        "right_knee",
+        "right_shoulder",
+        "left_shoulder",
+        "right_hip",
+        "left_hip",
+    ]
 
 
 class Keypoint:
@@ -535,7 +567,6 @@ class GameState:
             for c in self.passes[p]:
                 self.players[p].passes.update({c: self.passes[p][c]})
 
-    
     def recompute_possesssions(self):
         "naively compute frame-by-frame possession of ball"
         for frame in self.frames:
@@ -629,7 +660,6 @@ class GameState:
                 if pid not in self.players:
                     self.players.update({pid: PlayerState()})
                 self.players.get(pid).frames += 1
-
 
     def filter_players(self, threshold: int):
         "removes all players which appear for less than [threshold] frames"
