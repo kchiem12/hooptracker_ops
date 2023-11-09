@@ -7,7 +7,6 @@ from pathlib import Path
 import multiprocessing as mp
 import time
 from args import DARGS
-import logging
 
 from strongsort.yolov5 import detect as track
 
@@ -57,6 +56,7 @@ class ModelRunner:
 
         _, vid_path = track.run(
             source=self.args["video_file"],
+            logger_name="players",
             conf_thres=self.args["player_thres"]["conf_thres"],
             iou_thres=self.args["player_thres"]["iou_thres"],
             classes=[self.args["cls"]["player"], self.args["cls"]["rim"]],
@@ -78,6 +78,7 @@ class ModelRunner:
 
         _, bb_vid_path = track.run(
             source=self.args["video_file"],
+            logger_name="ball",
             yolo_weights=Path(self.args["ball_weights"]),
             save_vid=self.args["save_vid"],
             show_vid=self.args["show_vid"]["ball"],

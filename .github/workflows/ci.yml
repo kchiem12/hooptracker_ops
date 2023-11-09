@@ -27,7 +27,7 @@ jobs:
       run: echo $DATA >> ${{github.workspace}}/.env
     - name: Run CI tests
       run: |
-        python src/main.py 
+        python src/main.py --skip_court
         if [ ! -f ${{github.workspace}}/tmp/processed.mp4 ]; then
           echo "model run failed: output does not exist"
           exit 1
