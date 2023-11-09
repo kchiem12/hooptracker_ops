@@ -39,7 +39,11 @@ def main(args=DARGS) -> None:
         print(f"              player/rim output stored in {args['people_file']}")
         print(f"              ball output stored in {args['ball_file']}")
         print(f"              pose output stored in {args['pose_file']}")
- 
+    if not args["skip_process"]:
+        print(f"              processed video stored in {args['processed_file']}")
+        print(f"              results file stored in {args['results_file']}")
+        if not args["skip_court"]:
+            print(f"              minimap stored in {args['minimap_file']}")
 
 
 if __name__ == "__main__":
@@ -55,6 +59,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--skip_player_filter", action="store_true", help="skips player filters"
+    )
+    parser.add_argument(
+        "--model_verbose", action="store_true", help="prints model output to console"
     )
     parser.add_argument("--basename", help="name of output file")
     parser.add_argument(

@@ -7,6 +7,7 @@ from pathlib import Path
 import multiprocessing as mp
 import time
 from args import DARGS
+import logging
 
 from strongsort.yolov5 import detect as track
 
@@ -54,50 +55,40 @@ class ModelRunner:
 
         print("==============Start Players and Rim tracking!============")
 
-        out_array_pr, vid_path = track.run(
+        _, vid_path = track.run(
             source=self.args["video_file"],
-            logger_name="yolov5_person",
             conf_thres=self.args["player_thres"]["conf_thres"],
             iou_thres=self.args["player_thres"]["iou_thres"],
             classes=[self.args["cls"]["player"], self.args["cls"]["rim"]],
             yolo_weights=Path(self.args["player_weights"]),
             save_vid=self.args["save_vid"],
             show_vid=self.args["show_vid"]["player"],
-            ret=True,
+            ret=False,
+            save_txt=True,
+            write_to=self.args["people_file"],
+            verbose=self.args["model_verbose"],
         )
-        print("==============Players and Rim tracked!============")
-
         self.args["model_videos"]["player"] = vid_path
-        people_list = [tuple(round(num) for num in tup) for tup in out_array_pr]
-        people_data = [(" ".join(map(str, p[0:7]))) for p in people_list]
-        with open(self.args["people_file"], "w") as f:
-            f.write("\n".join(people_data))
-
-        print("==============Players and Rim saved to file!============")
+        print("==============Players and Rim tracked!============")
 
     def track_basketball(self):
         """tracks basketball in video and puts data in out_queue"""
 
         print("==============Start Ball tracking!============")
 
-        out_array_bb, bb_vid_path = track.run(
+        _, bb_vid_path = track.run(
             source=self.args["video_file"],
-            logger_name="yolov5_ball",
             yolo_weights=Path(self.args["ball_weights"]),
             save_vid=self.args["save_vid"],
             show_vid=self.args["show_vid"]["ball"],
-            ret=True,
             skip_big=self.args["skip_big"],
+            ret=False,
+            save_txt=True,
+            write_to=self.args["ball_file"],
+            verbose=self.args["model_verbose"],
         )
-        print("==============Basketball tracked!============")
-
         self.args["model_videos"]["ball"] = bb_vid_path
-        ball_list = [tuple(round(num) for num in tup) for tup in out_array_bb]
-        ball_data = [(" ".join(map(str, ball[0:7]))) for ball in ball_list]
-        with open(self.args["ball_file"], "w") as f:
-            f.write("\n".join(ball_data))
-
-        print("==============Basketball saved to file!============")
+        print("==============Basketball tracked!============")
 
     def pose(self):
         print("==============Start pose estimation!============")
@@ -105,11 +96,9 @@ class ModelRunner:
         results = model(
             source=self.args["video_file"],
             conf=self.args["pose_thres"]["conf"],
-            stream=False,
-            verbose=True,
+            stream=True,  # continuous output to results
+            verbose=self.args["model_verbose"],
         )
-        print("==============Pose estimated!============")
-
         with open(self.args["pose_file"], "w") as f:
             f.write("")
         with open(self.args["pose_file"], "a") as f:
@@ -121,7 +110,7 @@ class ModelRunner:
                 boxes = result.boxes
                 xywh = boxes.xywh.numpy()
                 xy = result.keypoints.xy.numpy()
-                n,_,_ = xy.shape
+                n, _, _ = xy.shape
                 for j in range(n):
                     s = str(frameno)
                     s += " " + str(0)
@@ -130,8 +119,7 @@ class ModelRunner:
                         s += " " + str(int(x))
                     s += " " + " ".join(xy[j].astype(int).flatten().astype(str))
                     f.write(s + "\n")
-
-        print("==============Pose saved to file!============")
+        print("==============Pose estimated!============")
 
     def run(self):
         """
@@ -140,18 +128,18 @@ class ModelRunner:
         """
         mp.set_start_method("spawn", force=True)  # fix hanging issue of git actions
 
-        # p1 = mp.Process(target=self.track_person)
-        # p2 = mp.Process(target=self.track_basketball)
+        p1 = mp.Process(target=self.track_person)
+        p2 = mp.Process(target=self.track_basketball)
         p3 = mp.Process(target=self.pose)
 
         start = time.time()
 
-        # p1.start()
-        # p2.start()
+        p1.start()
+        p2.start()
         p3.start()
 
-        # p1.join()
-        # p2.join()
+        p1.join()
+        p2.join()
         p3.join()
 
         end = time.time()
