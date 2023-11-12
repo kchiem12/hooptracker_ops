@@ -2,6 +2,7 @@
 Module containing state of game statistics
 """
 from enum import Enum
+from pose_estimation.pose_estimate import KeyPointNames, AngleNames
 import sys
 import math
 
@@ -217,8 +218,8 @@ class PlayerFrame:
         "NOTHING, DRIBBLE, PASS, SHOOT"
         self.keypoints: dict[str, Keypoint] = {}
         "keypoints of the player"
-        self.angles: dict[str, Angle] = {}
-        "angles of the player"
+        self.angles: dict[str, int] = {}
+        "angles of the player in degrees"
 
     def set_keypoints(self, keypoints: list) -> None:
         "Sets the keypoints for the player"
@@ -247,7 +248,7 @@ class PlayerFrame:
         for i in range(len(angles)):
             angle = angles[i]
             key = AngleNames.list[i]
-            self.angles[key] = Angle(angle)
+            self.angles[key] = angle
 
     def check(self) -> bool:
         "verifies if well-defined"
@@ -264,40 +265,6 @@ class PlayerFrame:
             return False
         return True
 
-
-class KeyPointNames:
-    list = [
-        "nose",
-        "left_eye",
-        "right_eye",
-        "left_ear",
-        "right_ear",
-        "left_shoulder",
-        "right_shoulder",
-        "left_elbow",
-        "right_elbow",
-        "left_wrist",
-        "right_wrist",
-        "left_hip",
-        "right_hip",
-        "left_knee",
-        "right_knee",
-        "left_ankle",
-        "right_ankle",
-    ]
-
-
-class AngleNames:
-    list = [
-        "left_elbow",
-        "right_elbow",
-        "left_knee",
-        "right_knee",
-        "right_shoulder",
-        "left_shoulder",
-        "right_hip",
-        "left_hip",
-    ]
 
 
 class Keypoint:

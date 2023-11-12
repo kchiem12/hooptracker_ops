@@ -86,10 +86,5 @@ class ProcessRunner:
         """
         Returns string of processed statistics.
         """
-        print(
-            "PLAYERS", str(state.todict(self.state.players))
-        )  # print the entire GameState
-        print("PASSES", str(state.todict(self.state.passes)))
-        print("POSSESSIONS", str(state.todict(self.state.possessions)))
 
         return str(state.todict(self.state))

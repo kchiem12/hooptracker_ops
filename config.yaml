@@ -24,7 +24,7 @@ model_videos: # path to saved videos
   player: '' 
   ball: ''
   pose: ''
-model_verbose: false # if true, prints model output to console
+verbose: false # if true, prints model output to console
 
 # Backend pipeline parameters
 skip_model: false # if true, skips model running

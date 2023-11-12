@@ -5,6 +5,7 @@ import cv2
 from ultralytics import YOLO
 from pathlib import Path
 import multiprocessing as mp
+from pose_estimation import pose_estimate
 import time
 from args import DARGS
 
@@ -66,7 +67,7 @@ class ModelRunner:
             ret=False,
             save_txt=True,
             write_to=self.args["people_file"],
-            verbose=self.args["model_verbose"],
+            verbose=self.args["verbose"],
         )
         self.args["model_videos"]["player"] = vid_path
         print("==============Players and Rim tracked!============")
@@ -86,7 +87,7 @@ class ModelRunner:
             ret=False,
             save_txt=True,
             write_to=self.args["ball_file"],
-            verbose=self.args["model_verbose"],
+            verbose=self.args["verbose"],
         )
         self.args["model_videos"]["ball"] = bb_vid_path
         print("==============Basketball tracked!============")
@@ -98,32 +99,10 @@ class ModelRunner:
             source=self.args["video_file"],
             conf=self.args["pose_thres"]["conf"],
             stream=True,  # continuous output to results
-            verbose=self.args["model_verbose"],
+            verbose=self.args["verbose"],
         )
-        with open(self.args["pose_file"], "w") as f:
-            f.write("")
-        try:
-            frameno = 0
-            for result in results:
-                frameno += 1
-                if result.boxes is None:
-                    continue
-                boxes = result.boxes
-                xywh = boxes.xywh.numpy()
-                xy = result.keypoints.xy.numpy()
-                n, _, _ = xy.shape
-                for j in range(n):
-                    s = str(frameno)
-                    s += " " + str(0)
-                    s += " " + str(0)
-                    for x in xywh[j, :]:
-                        s += " " + str(int(x))
-                    s += " " + " ".join(xy[j].astype(int).flatten().astype(str))
-                    with open(self.args["pose_file"], "a") as f:
-                        f.write(s + "\n")
-        except StopIteration:
-            print("==============Pose estimated!============")
-        
+        pose_estimate.write_to(self.args["pose_file"], results)
+        print("==============Pose estimated!============")
 
     def run(self):
         """
