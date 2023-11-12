@@ -29,6 +29,7 @@ class VideoRender:
         )
         ff.run()
         os.remove(input_path)
+        os.rename(output_path,input_path)
 
     def render_video(self, state: GameState, filename: str, fps: int = 30):
         """
