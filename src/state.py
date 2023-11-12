@@ -6,8 +6,43 @@ from pose_estimation.pose_estimate import KeyPointNames
 import sys
 import math
 
-#potential way to format the game stats --> need to figure out where
-#to retrieve info from
+def format_results_for_api(self):
+        # General statistics
+        general_stats = {
+            'Number of frames': len(self.frames),
+            'Duration': self.calculate_game_duration(),
+            'Highest scoring player': self.identify_highest_scoring_player()
+        }
+
+        # Player statistics
+        player_stats = {
+            player_id: {
+                'Points': player_state.points,
+                'Rebounds': self.calculate_rebounds(player_id),  # To be implemented
+                'Assists': sum(player_state.passes.values())
+            } for player_id, player_state in self.players.items()
+        }
+
+        # Team statistics
+        team_stats = {
+            'Team 1': {
+                'Score': self.team1.points,
+                'Possession': self.calculate_possession_time('Team 1')  # To be implemented
+            },
+            'Team 2': {
+                'Score': self.team2.points,
+                'Possession': self.calculate_possession_time('Team 2')  # To be implemented
+            }
+        }
+
+        # Combine all statistics into a single dictionary
+        formatted_results = {
+            'general_stats': general_stats,
+            'player_stats': player_stats,
+            'team_stats': team_stats
+        }
+
+        return formatted_results
 
 # maintains dictionary functionality, if desired:
 def todict(obj):
