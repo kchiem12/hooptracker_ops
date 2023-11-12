@@ -42,7 +42,7 @@ def process_video(video_file):
     if video_file is None:
         return False
     r = requests.post(
-        SERVER_URL + "upload", files={"video_file": video_file}, timeout=120
+        SERVER_URL + "upload", files={"video_file": video_file}, timeout=60
     )
     if r.status_code == 200:
         print("Successfully uploaded file")
@@ -115,10 +115,10 @@ def loading_page():
 
     # Load results page when done
     change_state(state)
-    st.rerun()
+    st.experimental_rerun()
 
 
-def results_page():
+def results_page(result_dict):
     st.markdown(
         """
         # Results
@@ -127,7 +127,26 @@ def results_page():
     )
     # st.video(open(st.session_state.processed_video, "rb").read())
 
+    
     st.markdown("## Statistics")
+    if result_dict:
+        # General Stats
+        st.markdown("### General Statistics")
+        general_df = pd.DataFrame([result_dict['general_stats']])
+        st.dataframe(general_df)
+
+        # Player Stats
+        st.markdown("### Player Statistics")
+        player_df = pd.DataFrame(result_dict['player_stats']).T
+        st.dataframe(player_df)
+
+        # Team Stats
+        st.markdown("### Team Statistics")
+        team_df = pd.DataFrame(result_dict['team_stats']).T
+        st.dataframe(team_df)
+   
+    
+
     process_results()
     st.download_button(
         label="Download Results",
@@ -135,8 +154,30 @@ def results_page():
         data=st.session_state.result_string,
         file_name="results.txt",
     )
+  
 
     st.button(label="Back to Home", on_click=change_state, args=(0,), type="primary")
+
+def display_results(result_string):
+    result_dict = ast.literal_eval(result_string)
+    if result_dict is None:
+        st.warning("No results to display")
+        return  
+    general_df = pd.DataFrame({ "Number of frames": [result_dict.get("Number of frames", 0)], 
+                               "Number of players": [result_dict.get("Number of players", 0)],
+                               "Number of passes": [result_dict.get("Number of passes", 0)]})
+    team_df = pd.DataFrame({
+        "Team 1": [
+             result_dict.get("Team 1", ""),
+             result_dict.get("Team 1 Score", 0),
+             result_dict.get("Team 1 Possession", 0)
+             ],
+             "Team 2": [
+                 result_dict.get("Team 2", ""),
+                 result_dict.get("Team 2 Score", 0), 
+                 result_dict.get("Team 2 Possession", 0)] }
+                 , index=["Players", "Score", "Possession"])
+    
 
 
 def tips_page():
@@ -156,6 +197,22 @@ def tips_page():
     # Back to Home
     st.button(label="Back to Home", on_click=change_state, args=(0,))
 
+#Get the results from tmp/results.txt
+def get_res():
+    file_path = "tmp/results.txt"
+    try:
+        with open(file_path, "r") as file:
+            result_string = file.read()
+        result_dict = ast.literal_eval(result_string)
+        return result_dict
+    except FileNotFoundError:
+        st.error(f"File not found: {file_path}")
+        return None
+    except Exception as e:
+        st.error(f"Error reading the file: {e}")
+        return None
+
+    
 
 def error_page():
     """
@@ -313,7 +370,7 @@ elif st.session_state.state == 0:
 elif st.session_state.state == 1:
     loading_page()
 elif st.session_state.state == 2:
-    results_page()
+    results_page(get_res())
 else:
     error_page()
 
