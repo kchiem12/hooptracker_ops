@@ -102,7 +102,7 @@ class ModelRunner:
         )
         with open(self.args["pose_file"], "w") as f:
             f.write("")
-        with open(self.args["pose_file"], "a") as f:
+        try:
             frameno = 0
             for result in results:
                 frameno += 1
@@ -119,8 +119,11 @@ class ModelRunner:
                     for x in xywh[j, :]:
                         s += " " + str(int(x))
                     s += " " + " ".join(xy[j].astype(int).flatten().astype(str))
-                    f.write(s + "\n")
-        print("==============Pose estimated!============")
+                    with open(self.args["pose_file"], "a") as f:
+                        f.write(s + "\n")
+        except StopIteration:
+            print("==============Pose estimated!============")
+        
 
     def run(self):
         """
@@ -144,5 +147,16 @@ class ModelRunner:
         p3.join()
 
         end = time.time()
+        total_frames = self.get_frame_count(self.args["video_file"])
+        minutes = round((end - start) / 60, 2)
+        ms_per_frame = round(1000 * (end - start) / total_frames, 4)
 
-        print(f"=============time elapsed: {end-start}=================")
+        print(
+            f"=============Model Time Elapsed: {minutes} minutes, {ms_per_frame}ms per frame================="
+        )
+
+    def get_frame_count(self, video_path):
+        cap = cv2.VideoCapture(video_path)
+        frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        cap.release()
+        return frame_count
