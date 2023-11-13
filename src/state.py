@@ -2,6 +2,7 @@
 Module containing state of game statistics
 """
 from enum import Enum
+from pose_estimation.pose_estimate import KeyPointNames, AngleNames
 import sys
 import math
 
@@ -217,6 +218,8 @@ class PlayerFrame:
         "NOTHING, DRIBBLE, PASS, SHOOT"
         self.keypoints: dict[str, Keypoint] = {}
         "keypoints of the player"
+        self.angles: dict[str, int] = {}
+        "angles of the player in degrees"
 
     def set_keypoints(self, keypoints: list) -> None:
         "Sets the keypoints for the player"
@@ -234,6 +237,19 @@ class PlayerFrame:
             key = KeyPointNames.list[i]
             self.keypoints[key] = Keypoint(x, y, confidence)
 
+    def set_angles(self, angles: list) -> None:
+        "Sets the angles for the player"
+        try:
+            assert len(angles) == len(AngleNames.list)
+        except Exception as e:
+            print("Could not load angles, list length error")
+            return
+
+        for i in range(len(angles)):
+            angle = angles[i]
+            key = AngleNames.list[i]
+            self.angles[key] = angle
+
     def check(self) -> bool:
         "verifies if well-defined"
         try:
@@ -249,40 +265,6 @@ class PlayerFrame:
             return False
         return True
 
-
-class KeyPointNames:
-    list = [
-        "nose",
-        "left_eye",
-        "right_eye",
-        "left_ear",
-        "right_ear",
-        "left_shoulder",
-        "right_shoulder",
-        "left_elbow",
-        "right_elbow",
-        "left_wrist",
-        "right_wrist",
-        "left_hip",
-        "right_hip",
-        "left_knee",
-        "right_knee",
-        "left_ankle",
-        "right_ankle",
-    ]
-
-
-class AngleNames:
-    list = [
-        "left_elbow",
-        "right_elbow",
-        "left_knee",
-        "right_knee",
-        "right_shoulder",
-        "left_shoulder",
-        "right_hip",
-        "left_hip",
-    ]
 
 
 class Keypoint:
@@ -312,6 +294,26 @@ class Keypoint:
                 and self.confidence >= 0
                 and self.confidence <= 1
             )
+        except AssertionError:
+            return False
+        return True
+
+
+class Angle:
+    """
+    Angle class containing the angle of the player limbs
+    """
+    def __init__(self, angle: float) -> None:
+        self.angle: int = math.trunc(angle)
+        "angle of the keypoint"
+
+    def __repr__(self) -> str:
+        return f"Angle(angle={self.angle})"
+    
+    def check(self) -> bool:
+        "verifies if well-defined"
+        try:
+            assert self.angle >= 0
         except AssertionError:
             return False
         return True

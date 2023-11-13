@@ -3,8 +3,7 @@ Parsing module for parsing all
 models outputs into the state
 """
 from state import GameState, Frame, ObjectType, Box
-import json
-
+from pose_estimation.pose_estimate import AngleNames, KeyPointNames
 
 def parse_sort_output(state: GameState, sort_output) -> None:
     """
@@ -68,6 +67,9 @@ def parse_pose_output(state: GameState, pose_output: str) -> None:
     lines = [[int(x) for x in line.split()] for line in file.readlines()]
     file.close()
 
+    kpn = len(KeyPointNames.list) # number of keypoints
+    an = len(AngleNames.list) # number of angles
+
     sts = state.frames
     p = 0  # index of pose_data
     s = 0  # index of state.frames
@@ -99,7 +101,10 @@ def parse_pose_output(state: GameState, pose_output: str) -> None:
             # If a likely player is found, set the keypoints for that player. Otherwise, print a message.
             if likely_id[0] is not None:
                 state_frame.players[likely_id[0]].set_keypoints(
-                    lines[p][7:]
+                    lines[p][7:7+2*kpn]
+                )
+                state_frame.players[likely_id[0]].set_angles(
+                    lines[p][7+2*kpn:7+2*kpn+an]
                 )
             else:
                 print("No likely player found for this person")

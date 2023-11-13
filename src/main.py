@@ -32,6 +32,10 @@ def main(args=DARGS) -> None:
     if not args["skip_process"]:
         processrunner.run()
 
+    results = processrunner.get_results()
+    with open(args["results_file"], "w") as f:
+        f.write(results)
+
     print(
         f"==============Backend complete! Results stored in {args['output']}======================"
     )
@@ -61,7 +65,7 @@ if __name__ == "__main__":
         "--skip_player_filter", action="store_true", help="skips player filters"
     )
     parser.add_argument(
-        "--model_verbose", action="store_true", help="prints model output to console"
+        "--verbose", action="store_true", help="prints model output to console"
     )
     parser.add_argument("--basename", help="name of output file")
     parser.add_argument(

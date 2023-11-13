@@ -8,3 +8,14 @@ tmp/
 .vscode/
 .DS_Store
 testing.jpg
+
+# Ignore specific large files
+yolov8m-pose.pt
+*.mp4  # ignores all .mp4 files; remove this line if some .mp4 files should be tracked
+ball/lib/python3.11/site-packages/torch/lib/libtorch_cpu.dylib
+venv/lib/python3.11/site-packages/torch/lib/libtorch_cpu.dylib
+ball/
+tmp/
+
+# Ignore all .json files in tmp/ directory; adjust as per requirement
+tmp/*.json
