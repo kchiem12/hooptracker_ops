@@ -16,6 +16,7 @@ ball/lib/python3.11/site-packages/torch/lib/libtorch_cpu.dylib
 venv/lib/python3.11/site-packages/torch/lib/libtorch_cpu.dylib
 ball/
 tmp/
+data/vid1_raw.MOV
 
 # Ignore all .json files in tmp/ directory; adjust as per requirement
 tmp/*.json

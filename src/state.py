@@ -73,9 +73,10 @@ class Box:
     """
     Bounding box containing
         xmin, ymin, xmax, ymax of bounding box
+        predicted: indicates if the box was predicted (default False)
     """
 
-    def __init__(self, xmin: int, ymin: int, xmax: int, ymax: int) -> None:
+    def __init__(self, xmin: int, ymin: int, xmax: int, ymax: int, predicted=False) -> None:
         """
         Initializes bounding box
         """
@@ -84,6 +85,7 @@ class Box:
         self.ymin: int = ymin
         self.xmax: int = xmax
         self.ymax: int = ymax
+        self.predicted: bool = predicted
 
     def center(self):
         return ((self.xmin + self.xmax) / 2, (self.ymin + self.ymax) / 2)
@@ -212,30 +214,31 @@ class BallFrame:
     """
     Ball state containing
         box: bounding box
-        playerid: of last posession
-        type: IN_POCESSION, IN_TRANSITION, or OUT_OF_PLAY
+        playerid: of last possession
+        type: IN_POSSESSION, IN_TRANSITION, or OUT_OF_PLAY
+        vx: velocity in the x-direction
+        vy: velocity in the y-direction
     """
 
     def __init__(self, xmin: int, ymin: int, xmax: int, ymax: int) -> None:
         # IMMUTABLE
-        self.box: Box = Box(xmin, ymin, xmax, ymax)
-        "bounding box"
+        self.box: Box = Box(xmin, ymin, xmax, ymax)  # Bounding box
 
         # MUTABLE
-        self.playerid: int = None
-        "last player in possession"
-        self.type: BallType = None
-        "IN_POCESSION, IN_TRANSITION, or OUT_OF_PLAY"
+        self.playerid: int = None  # Last player in possession
+        self.type: BallType = None  # IN_POSSESSION, IN_TRANSITION, or OUT_OF_PLAY
+        self.vx: float = None
+        self.vy: float = None
 
     def check(self) -> bool:
-        "verifies if well-defined"
+        "Verifies if well-defined"
         try:
-            assert self.box.check() == True
+            assert self.box.check()
             assert self.playerid is not None and self.type is not None
-        except:
+            # Note: vx and vy are allowed to be None, so no check is needed for them
+            return True
+        except AssertionError:
             return False
-        return True
-
 
 class ActionType(Enum):
     "player actions type"
