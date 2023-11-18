@@ -6,6 +6,7 @@ import streamlit as st
 import hydralit_components as hc
 import pandas as pd
 import requests
+from format import Format
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from main import main
@@ -58,7 +59,7 @@ def process_video(video_file):
     # PROCESS VIDEO
     print("User Video", user_video)
     # ASSUME process updates results locally for now TODO
-    r = requests.post(SERVER_URL + "process", params={"file_name": user_video})
+    r = requests.post(SERVER_URL + "results", params={})
     if r.status_code == 200:
         print(r.json().get("message"))
         with open("tmp/results.txt", "r") as file:
@@ -118,7 +119,7 @@ def loading_page():
     st.experimental_rerun()
 
 
-def results_page(result_dict):
+def results_page():
     st.markdown(
         """
         # Results
@@ -129,24 +130,9 @@ def results_page(result_dict):
 
     
     st.markdown("## Statistics")
-    if result_dict:
-        # General Stats
-        st.markdown("### General Statistics")
-        general_df = pd.DataFrame([result_dict['general_stats']])
-        st.dataframe(general_df)
-
-        # Player Stats
-        st.markdown("### Player Statistics")
-        player_df = pd.DataFrame(result_dict['player_stats']).T
-        st.dataframe(player_df)
-
-        # Team Stats
-        st.markdown("### Team Statistics")
-        team_df = pd.DataFrame(result_dict['team_stats']).T
-        st.dataframe(team_df)
-   
-    
-
+    formatted_results = get_formatted_results()
+    if formatted_results:
+        st.json(formatted_results)
     process_results()
     st.download_button(
         label="Download Results",
@@ -158,28 +144,18 @@ def results_page(result_dict):
 
     st.button(label="Back to Home", on_click=change_state, args=(0,), type="primary")
 
-def display_results(result_string):
-    result_dict = ast.literal_eval(result_string)
-    if result_dict is None:
-        st.warning("No results to display")
-        return  
-    general_df = pd.DataFrame({ "Number of frames": [result_dict.get("Number of frames", 0)], 
-                               "Number of players": [result_dict.get("Number of players", 0)],
-                               "Number of passes": [result_dict.get("Number of passes", 0)]})
-    team_df = pd.DataFrame({
-        "Team 1": [
-             result_dict.get("Team 1", ""),
-             result_dict.get("Team 1 Score", 0),
-             result_dict.get("Team 1 Possession", 0)
-             ],
-             "Team 2": [
-                 result_dict.get("Team 2", ""),
-                 result_dict.get("Team 2 Score", 0), 
-                 result_dict.get("Team 2 Possession", 0)] }
-                 , index=["Players", "Score", "Possession"])
+
+
+def get_formatted_results():
+    try:
+        response = requests.get(SERVER_URL + "results")
+        if response.status_code == 200:
+            return response.json()  # Returns the formatted results as JSON
+        else:
+            return {"error": "Failed to retrieve data from the backend."}
+    except requests.RequestException as e:
+        return {"error": str(e)}
     
-
-
 def tips_page():
     """
     Loads tips page
@@ -213,7 +189,14 @@ def get_res():
         return None
 
     
-
+def results_api(video_file):
+    if video_file is not None:
+        r = requests.post(
+        SERVER_URL + "result", files={"video_file": video_file}, timeout=60
+        )
+    
+    results = r.json()
+    st.write(results)
 def error_page():
     """
     Loads error page
