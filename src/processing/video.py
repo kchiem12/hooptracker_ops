@@ -10,6 +10,7 @@ class VideoCreator:
     TEAM1_COLOR = (0, 255, 0)
     TEAM2_COLOR = (255, 0, 0)
     BALL_COLOR = (0, 0, 255)
+    PREDICTED_BALL_COLOR = (255, 0, 255)
     RIM_COLOR = (0, 255, 255)
     POSSESSION_COLOR = (100, 100, 0)
     SHOOTING_COLOR = (255, 255, 0)
@@ -30,25 +31,30 @@ class VideoCreator:
     # Function to draw bounding boxes on the frame
     def draw_boxes(self, frame, boxes, color, label=""):
         for box in boxes:
-            # Draw rectangle around each box with the specified color
+            # Determine color based on whether the box was predicted or not
+            draw_color = self.PREDICTED_BALL_COLOR if getattr(box, 'predicted', False) else color
+
+            # Draw rectangle around each box with the determined color
             cv2.rectangle(
                 frame,
-                (box.xmin, box.ymin),
-                (box.xmax, box.ymax),
-                color,
+                (int(box.xmin), int(box.ymin)),
+                (int(box.xmax), int(box.ymax)),
+                draw_color,
                 self.LINE_WIDTH,
             )
+
             # If a label is provided, put the label on the frame above the box
             if label:
                 cv2.putText(
                     frame,
                     label,
-                    (box.xmin, box.ymin - 10),
+                    (int(box.xmin), int(box.ymin) - 10),
                     cv2.FONT_HERSHEY_SIMPLEX,
                     0.9,
-                    color,
+                    draw_color,
                     self.LABEL_SIZE,
                 )
+
 
     # Function to draw keypoints on the frame
     def draw_keypoints(self, frame, keypoints, color):
