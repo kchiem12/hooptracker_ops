@@ -3,7 +3,7 @@ Runner module for processing and statistics
 """
 import state
 from state import GameState
-from processing import parse, court, render, shot, team, video
+from processing import parse, court, render, shot, team, video, action
 from args import DARGS
 
 
@@ -30,11 +30,11 @@ class ProcessRunner:
         parse.parse_pose_output(self.state, self.args["pose_file"])
 
     def run_possession(self):
-        '''self.state.recompute_possesssions()
+        """self.state.recompute_possesssions()
         self.state.recompute_possession_list(
             threshold=self.args["filter_threshold"],
             join_threshold=self.args["join_threshold"],
-        )'''   
+        )"""
         self.state.recompute_possessions_v1()
         self.state.compute_possession_intervals()
         self.state.recompute_pass_from_possession()
@@ -44,6 +44,8 @@ class ProcessRunner:
 
     def run_shot_detect(self):
         shot.shots(self.state, window=self.args["shot_window"])
+        action_recognition = action.ActionRecognition(self.state)
+        action_recognition.shot_detect()
 
     def run_courtline_detect(self):
         """Runs courtline detection."""
