@@ -1,5 +1,5 @@
 import torch
-from state import GameState, Frame, PlayerFrame, Keypoint
+from state import GameState, Frame, PlayerFrame, BallFrame, Box, Keypoint
 from pose_estimation.pose_estimate import KeyPointNames, AngleNames
 from args import DARGS
 
@@ -13,8 +13,7 @@ class ActionRecognition:
         self.THRESHOLD = args["shot_threshold"]
         self.ANGLE_THRESHOLD = args["angle_threshold"]
 
-    @staticmethod
-    def is_shot(player_frame: PlayerFrame, THRESHOLD, ANGLE_THRESHOLD):
+    def pose_shot(player_frame: PlayerFrame, ANGLE_THRESHOLD):
         """
         Takes in keypoint and angle data for a player in a frame and returns whether
         or not the player is shooting. Currently uses a simple threshold heuristic.
@@ -57,18 +56,38 @@ class ActionRecognition:
 
         curr = 0
         if left_wrist[1] < left_shoulder[1] and right_wrist[1] < right_shoulder[1]:
-            curr += 0.6
+            curr += 0.3
         angles = [left_knee, right_knee, left_elbow, right_elbow]
         for i in angles:
             if i > ANGLE_THRESHOLD:
-                curr += 0.1
-        # return True
-        return curr >= THRESHOLD
+                curr += 0.075
+        return curr
+
+
+    def ball_shot(self, ball_frame: BallFrame, rim: Box):
+        # checks whether ball y coord is above rim y coord
+        ball_pos = ball_frame.box
+        mid_box = ball_pos.center()
+        mid_rim = rim.center()
+        y_weight = 0.3 if mid_box[1] < mid_rim[1] else 0
+
+        # checks whether displacement between rim and ball decreases
+        displacement = tuple(map(lambda x, y: x - y, mid_rim, mid_box))
+        v_ball = (ball_frame.vx, - 1 * ball_frame.vy)
+        inner_prod = sum(map(lambda x, y: x * y, displacement, v_ball))
+        displacement_weight = 0.1 if inner_prod > 0 else 0
+
+        return y_weight + displacement_weight
+
 
     def shot_detect(self):
         for frame in self.state.frames:  # type: Frame
+            ball_frame = frame.ball
+            ball_shot = self.ball_shot(ball_frame, frame.rim)
+
             for player_id, player_frame in frame.players.items():  # type: PlayerFrame
-                if self.is_shot(player_frame, self.THRESHOLD, self.ANGLE_THRESHOLD):
+                pose_shot = self.pose_shot(player_frame, self.ANGLE_THRESHOLD)
+                if ball_shot + pose_shot >= self.THRESHOLD:
                     print(
                         frame.frameno,
                         player_id,
