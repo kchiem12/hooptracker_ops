@@ -29,24 +29,41 @@ class LinearTrendline:
                 frame2.ball.vy = vy
 
     def estimate_missing_positions(self):
-        for i in range(1, len(self.state.frames)):
+        for i in range(len(self.state.frames)):
             current_frame = self.state.frames[i]
-            previous_frame = self.state.frames[i - 1]
 
-            if not current_frame.ball and previous_frame.ball:
-                j = i
-                while j < len(self.state.frames) and not self.state.frames[j].ball:
-                    if previous_frame.ball.vx is not None and previous_frame.ball.vy is not None:
-                        # Calculate predicted position based on velocity
-                        x_center_prev, y_center_prev = previous_frame.ball.box.center()
-                        x_pred = x_center_prev + (j - i + 1) * previous_frame.ball.vx / self.fps
-                        y_pred = y_center_prev + (j - i + 1) * previous_frame.ball.vy / self.fps
+            if not current_frame.ball:
+                # Find the nearest previous frame with the ball
+                prev_index = None
+                next_index = None
 
-                        # Create a new BallFrame with estimated position
-                        predicted_box = self.create_predicted_box(x_pred, y_pred)
-                        self.state.frames[j].ball = BallFrame(predicted_box.xmin, predicted_box.ymin, predicted_box.xmax, predicted_box.ymax)
+                for j in range(i - 1, -1, -1):
+                    if self.state.frames[j].ball:
+                        prev_index = j
+                        break
 
-                    j += 1
+                # Find the nearest next frame with the ball
+                for j in range(i + 1, len(self.state.frames)):
+                    if self.state.frames[j].ball:
+                        next_index = j
+                        break
+
+                # Only interpolate if both previous and next frames with the ball are found
+                if prev_index is not None and next_index is not None:
+                    prev_ball = self.state.frames[prev_index].ball
+                    next_ball = self.state.frames[next_index].ball
+
+                    prev_pos = prev_ball.box.center()
+                    next_pos = next_ball.box.center()
+
+                    # Linear interpolation
+                    t = (i - prev_index) / (next_index - prev_index)
+                    x_pred = prev_pos[0] + (next_pos[0] - prev_pos[0]) * t
+                    y_pred = prev_pos[1] + (next_pos[1] - prev_pos[1]) * t
+
+                    # Create a new BallFrame with estimated position
+                    predicted_box = self.create_predicted_box(x_pred, y_pred)
+                    current_frame.ball = BallFrame(predicted_box.xmin, predicted_box.ymin, predicted_box.xmax, predicted_box.ymax)
 
     def create_predicted_box(self, x_center, y_center, ball_size=20):
         # Assuming a fixed size for the ball for simplicity
