@@ -34,7 +34,7 @@ class ProcessRunner:
         self.state.recompute_possession_list(
             threshold=self.args["filter_threshold"],
             join_threshold=self.args["join_threshold"],
-        )'''   
+        )"""
         self.state.recompute_possessions_v1()
         self.state.compute_possession_intervals()
         self.state.recompute_pass_from_possession()
