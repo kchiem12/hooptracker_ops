@@ -37,6 +37,10 @@ filter_threshold: 10 # min frames for player to be considered in possession
 join_threshold: 20 # max frames for same player to still be in possession
 shot_window: 10 # window of frames to look at ball intersecting top box and rim box
 
+# Pose action parameters
+shot_threshold: 0.7 # threshold for shot action
+angle_threshold: 150
+
 # User Input
 video_file: 'data/short_new_2.mov' # file to be processed
 
