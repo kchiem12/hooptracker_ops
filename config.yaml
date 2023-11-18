@@ -38,7 +38,7 @@ join_threshold: 20 # max frames for same player to still be in possession
 shot_window: 10 # window of frames to look at ball intersecting top box and rim box
 
 # Pose action parameters
-shot_threshold: 0.6 # threshold for shot action
+shot_threshold: 0.8 # threshold for shot action
 angle_threshold: 160
 
 # User Input

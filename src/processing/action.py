@@ -1,11 +1,6 @@
 import torch
-from state import GameState, Frame, PlayerFrame, BallFrame, Box, Keypoint
-from pose_estimation.pose_estimate import KeyPointNames, AngleNames
+from state import GameState, PlayerFrame, BallFrame, Box
 from args import DARGS
-
-COMBINATIONS = AngleNames.combinations
-ANGLE_NAMES = AngleNames.list
-
 
 class ActionRecognition:
     def __init__(self, state: GameState, args=DARGS) -> None:
@@ -13,11 +8,11 @@ class ActionRecognition:
         self.THRESHOLD = args["shot_threshold"]
         self.ANGLE_THRESHOLD = args["angle_threshold"]
 
-    def pose_shot(player_frame: PlayerFrame, ANGLE_THRESHOLD):
+    def pose_shot(self, player_frame: PlayerFrame, ANGLE_THRESHOLD):
         """
-        Takes in keypoint and angle data for a player in a frame and returns whether
-        or not the player is shooting. Currently uses a simple threshold heuristic.
-        Updates state.shotss
+        Takes in keypoint and angle data for a player in a frame and returns the
+        weighted sum of the pose features. Currently uses a simple threshold
+        heuristic.
         """
         keypoints = ["left_wrist", "right_wrist", "left_shoulder", "right_shoulder"]
         for keypoint in keypoints:
@@ -65,6 +60,10 @@ class ActionRecognition:
 
 
     def ball_shot(self, ball_frame: BallFrame, rim: Box):
+        """
+        Takes in ball data at a frame and returns the weighted sum of the ball
+        features. Currently uses a simple threshold heuristic.
+        """
         # checks whether ball y coord is above rim y coord
         ball_pos = ball_frame.box
         mid_box = ball_pos.center()
@@ -72,15 +71,22 @@ class ActionRecognition:
         y_weight = 0.3 if mid_box[1] < mid_rim[1] else 0
 
         # checks whether displacement between rim and ball decreases
-        displacement = tuple(map(lambda x, y: x - y, mid_rim, mid_box))
-        v_ball = (ball_frame.vx, - 1 * ball_frame.vy)
-        inner_prod = sum(map(lambda x, y: x * y, displacement, v_ball))
-        displacement_weight = 0.1 if inner_prod > 0 else 0
+        # displacement = tuple(map(lambda x, y: x - y, mid_rim, mid_box))
+        # v_ball = (ball_frame.vx, -1 * ball_frame.vy)
+        # inner_prod = sum(map(lambda x, y: x * y, displacement, v_ball))
+        # displacement_weight = 0.1 if inner_prod > 0 else 0
 
-        return y_weight + displacement_weight
+        # return y_weight + displacement_weight
+        return y_weight + 0.1 # TODO may implement later if velocity is added
 
 
     def shot_detect(self):
+        """
+        Iterates through each frame and computes the classification of shots for each player.
+        if the weighted sum is above the threshold, then the player is classified as shooting.
+        """
+        # shots_file = open("tmp/shots.txt", "w")
+
         for frame in self.state.frames:  # type: Frame
             ball_frame = frame.ball
             ball_shot = self.ball_shot(ball_frame, frame.rim)
@@ -88,15 +94,10 @@ class ActionRecognition:
             for player_id, player_frame in frame.players.items():  # type: PlayerFrame
                 pose_shot = self.pose_shot(player_frame, self.ANGLE_THRESHOLD)
                 if ball_shot + pose_shot >= self.THRESHOLD:
-                    print(
-                        frame.frameno,
-                        player_id,
-                        player_frame.keypoints["left_wrist"].y,
-                        player_frame.keypoints["left_shoulder"].y,
-                        player_frame.angles["left_knee"],
-                        player_frame.angles["left_elbow"],
-                        player_frame.angles["right_knee"],
-                        player_frame.angles["right_elbow"],
-                    )
+                    # shots_file.write(str(frame.frameno))
+                    # shots_file.write(str(player_id))
+                    # shots_file.write("\n")
                     shot_interval = (frame.frameno, player_id)
                     self.state.shots.append(shot_interval)
+
+#        shots_file.close()
