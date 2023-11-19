@@ -1,13 +1,12 @@
 from state import GameState, ShotAttempt, Box, Interval
 
-
 class ShotFrame:
     def __init__(self):
         self.top: bool = False
         self.rim: bool = False
 
 
-def detect_shot(state: GameState, inte: Interval, window: int) -> ShotAttempt:
+def madeshot(state: GameState, inte: Interval, window: int) -> ShotAttempt:
     """
     Returns a ShotAttempt analyzing frames along the interval
         window: margin of error in frames from top to rim box
@@ -50,17 +49,9 @@ def shots(state: GameState, window: int):
     Assumption:
         shots are counted as breaks between possesssions
     """
-    # Create intervals of shots
-    shots: list[Interval] = []
-    poss = state.possessions
-    for i in range(len(poss) - 1):
-        p1 = poss[i]
-        p2 = poss[i + 1]
-        shots.append(Interval(p1.playerid, p1.end, p2.start))
-
-    for inte in shots:
-        sa: ShotAttempt = detect_shot(state, inte, window=window)
+    for inte in state.shots:
+        sa: ShotAttempt = madeshot(state, inte, window=window)
         state.shot_attempts.append(sa)
 
-    state.populate_players_stats() # populate players stats
-    state.populate_team_stats() # populate team stats
+    state.populate_players_stats()  # populate players stats
+    state.populate_team_stats()  # populate team stats

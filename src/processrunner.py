@@ -3,7 +3,7 @@ Runner module for processing and statistics
 """
 import state
 from state import GameState
-from processing import parse, court, render, shot, team, video, trendline
+from processing import parse, court, render, shot, team, video, trendline, action
 from args import DARGS
 
 
@@ -30,11 +30,11 @@ class ProcessRunner:
         parse.parse_pose_output(self.state, self.args["pose_file"])
 
     def run_possession(self):
-        '''self.state.recompute_possesssions()
+        """self.state.recompute_possesssions()
         self.state.recompute_possession_list(
             threshold=self.args["filter_threshold"],
             join_threshold=self.args["join_threshold"],
-        )'''
+        )"""
         self.state.recompute_possessions_v1()
         self.state.compute_possession_intervals()
         self.state.recompute_pass_from_possession()
@@ -43,6 +43,8 @@ class ProcessRunner:
         team.split_team(self.state)
 
     def run_shot_detect(self):
+        action_recognition = action.ActionRecognition(self.state)
+        action_recognition.shot_detect()
         shot.shots(self.state, window=self.args["shot_window"])
 
     def run_courtline_detect(self):
@@ -82,12 +84,12 @@ class ProcessRunner:
         print("possession detection complete!")
         self.run_team_detect()
         print("team detection complete!")
+        self.run_trendline()
+        print("trendline processing complete!")
         self.run_shot_detect()
         print("shot detection complete!")
         self.run_courtline_detect()
         print("court detection and render complete!")
-        self.run_trendline()
-        print("trendline processing complete!")
         self.run_video_processor()
         print("stats video render complete!")
 
