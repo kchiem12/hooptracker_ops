@@ -43,9 +43,9 @@ class ProcessRunner:
         team.split_team(self.state)
 
     def run_shot_detect(self):
-        shot.shots(self.state, window=self.args["shot_window"])
         action_recognition = action.ActionRecognition(self.state)
         action_recognition.shot_detect()
+        shot.shots(self.state, window=self.args["shot_window"])
 
     def run_courtline_detect(self):
         """Runs courtline detection."""

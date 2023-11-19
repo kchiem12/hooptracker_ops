@@ -1,5 +1,5 @@
 from state import GameState, ShotAttempt, Box, Interval
-
+import action
 
 class ShotFrame:
     def __init__(self):
@@ -50,15 +50,7 @@ def shots(state: GameState, window: int):
     Assumption:
         shots are counted as breaks between possesssions
     """
-    # Create intervals of shots
-    shots: list[Interval] = []
-    poss = state.possessions
-    for i in range(len(poss) - 1):
-        p1 = poss[i]
-        p2 = poss[i + 1]
-        shots.append(Interval(p1.playerid, p1.end, p2.start))
-
-    for inte in shots:
+    for inte in state.shots:
         sa: ShotAttempt = detect_shot(state, inte, window=window)
         state.shot_attempts.append(sa)
 
