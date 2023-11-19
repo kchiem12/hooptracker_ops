@@ -19,8 +19,8 @@ class ActionRecognition:
                 return False
         # Assuming keypoints are in the form {name: Keypoint}
         left_wrist_y = player_frame.keypoints["left_wrist"].y
-        right_wrist_y = player_frame.keypoints["right_wrist"].y,
-        left_shoulder_y =player_frame.keypoints["left_shoulder"].y
+        right_wrist_y = player_frame.keypoints["right_wrist"].y
+        left_shoulder_y = player_frame.keypoints["left_shoulder"].y
         right_shoulder_y = player_frame.keypoints["right_shoulder"].y
 
         left_knee = player_frame.angles["left_knee"]
