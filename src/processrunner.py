@@ -3,7 +3,7 @@ Runner module for processing and statistics
 """
 import state
 from state import GameState
-from processing import parse, court, render, shot, team, video
+from processing import parse, court, render, shot, team, video, trendline
 from args import DARGS
 
 
@@ -34,7 +34,7 @@ class ProcessRunner:
         self.state.recompute_possession_list(
             threshold=self.args["filter_threshold"],
             join_threshold=self.args["join_threshold"],
-        )'''   
+        )'''
         self.state.recompute_possessions_v1()
         self.state.compute_possession_intervals()
         self.state.recompute_pass_from_possession()
@@ -67,6 +67,11 @@ class ProcessRunner:
         )
         video_creator.run()
 
+    def run_trendline(self):
+        """Runs the LinearTrendline process to track and estimate ball position and velocity."""
+        trendline_process = trendline.LinearTrendline(self.state, self.args)
+        trendline_process.process()
+
     def run(self):
         """
         Runs all processing and statistics.
@@ -81,6 +86,8 @@ class ProcessRunner:
         print("shot detection complete!")
         self.run_courtline_detect()
         print("court detection and render complete!")
+        self.run_trendline()
+        print("trendline processing complete!")
         self.run_video_processor()
         print("stats video render complete!")
 
