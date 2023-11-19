@@ -1,5 +1,5 @@
 import torch
-from state import GameState, PlayerFrame, BallFrame, Box
+from state import GameState, PlayerFrame, BallFrame, Box, Interval
 from args import DARGS
 
 class ActionRecognition:
@@ -99,7 +99,11 @@ class ActionRecognition:
                     # shots_file.write(str(frame.frameno))
                     # shots_file.write(str(player_id))
                     # shots_file.write("\n")
-                    shot_interval = (frame.frameno, player_id)
-                    self.state.shots.append(shot_interval)
+                    for interval in self.state.possessions:
+                        if (interval.start <= frame.frameno <= interval.end and 
+                            interval not in self.state.shots):
+                            self.state.shots.append(interval)
+                    #shot_interval = (frame.frameno, player_id)
+                    #self.state.shots.append(shot_interval)
 
 #        shots_file.close()
