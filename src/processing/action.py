@@ -65,6 +65,8 @@ class ActionRecognition:
         features. Currently uses a simple threshold heuristic.
         """
         # checks whether ball y coord is above rim y coord
+        if ball_frame is None:
+            return 0
         ball_pos = ball_frame.box
         mid_box = ball_pos.center()
         mid_rim = rim.center()
