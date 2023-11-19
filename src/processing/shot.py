@@ -1,5 +1,4 @@
 from state import GameState, ShotAttempt, Box, Interval
-import action
 
 class ShotFrame:
     def __init__(self):
@@ -7,7 +6,7 @@ class ShotFrame:
         self.rim: bool = False
 
 
-def detect_shot(state: GameState, inte: Interval, window: int) -> ShotAttempt:
+def madeshot(state: GameState, inte: Interval, window: int) -> ShotAttempt:
     """
     Returns a ShotAttempt analyzing frames along the interval
         window: margin of error in frames from top to rim box
@@ -51,7 +50,7 @@ def shots(state: GameState, window: int):
         shots are counted as breaks between possesssions
     """
     for inte in state.shots:
-        sa: ShotAttempt = detect_shot(state, inte, window=window)
+        sa: ShotAttempt = madeshot(state, inte, window=window)
         state.shot_attempts.append(sa)
 
     state.populate_players_stats()  # populate players stats
