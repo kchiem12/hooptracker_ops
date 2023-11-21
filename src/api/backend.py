@@ -48,7 +48,8 @@ async def process_file(file_name: str):
     TODO change from local to cloud
     """
     try:
-        command = ["python", "src/main.py", "--source", file_name]
+
+        command = ["python", "src/main.py", "--video_file", file_name]
         subprocess.run(command)
         return {"message": f"successfully processed {file_name}", "status": "success"}
     except Exception as ex:
