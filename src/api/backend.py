@@ -3,13 +3,14 @@ Backend module built in FastAPI
 """
 import time
 import io
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import StreamingResponse
 import pandas as pd
 import boto3
 import os
 import subprocess
 from dotenv import load_dotenv
+from format import Format
 
 # Amazon S3 Connection
 load_dotenv()
@@ -71,17 +72,13 @@ async def download_file(file_name: str, download_path: str):
         return {"error": str(ex)}
 
 
-# TODO Not being used RN
+
 @app.get("/results")
-async def get_results():
-    """
-    Fetch the results csv from statistics
-    """
-    dummy_df = pd.read_csv("dummy.csv")  # replace with stat logic
-    stream = io.StringIO()
-    dummy_df.to_csv(stream, index=False)
-    response = StreamingResponse(
-        io.StringIO(dummy_df.to_csv(index=False)), media_type="text/csv"
-    )
-    response.headers["Content-Disposition"] = "attachment; filename=export.csv"
-    return response
+async def get_formatted_results():
+    try:
+        # Assuming the Format.results() method returns the formatted data as JSON
+        formatted_data = Format.results()
+        return formatted_data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
