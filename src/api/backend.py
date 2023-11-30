@@ -10,7 +10,13 @@ import boto3
 import os
 import subprocess
 from dotenv import load_dotenv
-from format import Format
+
+import sys
+import os
+
+from ..format import Format
+
+
 
 # Amazon S3 Connection
 load_dotenv()
