@@ -88,3 +88,12 @@ async def get_formatted_results():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
+
+@app.get("/video")
+async def get_videos():
+    file_path = 'tmp/minimap.mp4'
+    def iterfile():  
+        with open(file_path, mode="rb") as file_like:  
+            yield from file_like 
+
+    return StreamingResponse(iterfile(), media_type="video/mp4")
