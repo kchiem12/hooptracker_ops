@@ -50,6 +50,9 @@ warnings.filterwarnings("ignore")
 import torch
 import torch.backends.cudnn as cudnn
 
+import concurrent.futures
+import urllib.request
+
 FILE = Path(__file__).resolve()
 ROOT = FILE.parents[1]  # yolov5 strongsort root directory
 WEIGHTS = ROOT / "weights"
@@ -218,13 +221,10 @@ def run(
         with open(write_to, "w") as f:
             f.write("")
 
-    # Run tracking
-    model.warmup(imgsz=(1 if pt else nr_sources, 3, *imgsz))  # warmup
-    dt, seen = [0.0, 0.0, 0.0, 0.0], 0
-    curr_frames, prev_frames = [None] * nr_sources, [None] * nr_sources
-    for frame_idx, (path, im, im0s, vid_cap, s) in enumerate(dataset):
-        if not frame_idx % skips == 0:
-            continue
+    def runEverything(frame_idx, path, img, im0s, vid_cap, output):
+        dt, seen = [0.0, 0.0, 0.0, 0.0], 0
+        curr_frames, prev_frames = [None] * nr_sources, [None] * nr_sources
+
         t1 = time_sync()
         im = torch.from_numpy(im).to(device)
         im = im.half() if half else im.float()  # uint8 to fp16/32
@@ -523,6 +523,28 @@ def run(
                 vid_writer[i].write(im0)
 
             prev_frames[i] = curr_frames[i]
+
+    # Run tracking
+    model.warmup(imgsz=(1 if pt else nr_sources, 3, *imgsz))  # warmup
+    # dt, seen = [0.0, 0.0, 0.0, 0.0], 0
+    # curr_frames, prev_frames = [None] * nr_sources, [None] * nr_sources
+
+    # all = {executor.submit(runEverything, url, 60): url for url in URLS}
+    all = {}
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+        for frame_idx, (path, im, im0s, vid_cap, s) in enumerate(dataset):
+            all[
+                executor.submit(runEverything, frame_idx, path, im, im0s, vid_cap, s)
+            ] = frame_idx
+        
+        for future in concurrent.futures.as_completed(all):
+            try:
+                data = future.result()
+            except Exception as exc:
+                print("generated an exception: %s" % (exc))
+            else:
+                print("done")
 
     # Print results
     t = tuple(x / seen * 1e3 for x in dt)  # speeds per image
