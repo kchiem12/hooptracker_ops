@@ -221,9 +221,29 @@ def run(
         with open(write_to, "w") as f:
             f.write("")
 
-    def runEverything(frame_idx, path, img, im0s, vid_cap, output):
+    def runEverything(
+        frame_idx,
+        path,
+        im,
+        im0s,
+        vid_cap,
+        outputs,
+        s,
+        device,
+        half,
+        save_dir,
+        visualize,
+        augment,
+        model,
+        conf_thres,
+        iou_thres,
+        classes,
+        agnostic_nms,
+        max_det,
+        write_to,
+    ):
         dt, seen = [0.0, 0.0, 0.0, 0.0], 0
-        curr_frames, prev_frames = [None] * nr_sources, [None] * nr_sources
+        # curr_frames, prev_frames = [None] * nr_sources, [None] * nr_sources
 
         t1 = time_sync()
         im = torch.from_numpy(im).to(device)
@@ -523,11 +543,13 @@ def run(
                 vid_writer[i].write(im0)
 
             prev_frames[i] = curr_frames[i]
+        return dt, seen
 
     # Run tracking
     model.warmup(imgsz=(1 if pt else nr_sources, 3, *imgsz))  # warmup
+
     # dt, seen = [0.0, 0.0, 0.0, 0.0], 0
-    # curr_frames, prev_frames = [None] * nr_sources, [None] * nr_sources
+    curr_frames, prev_frames = [None] * nr_sources, [None] * nr_sources
 
     # all = {executor.submit(runEverything, url, 60): url for url in URLS}
     all = {}
@@ -535,16 +557,33 @@ def run(
     with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
         for frame_idx, (path, im, im0s, vid_cap, s) in enumerate(dataset):
             all[
-                executor.submit(runEverything, frame_idx, path, im, im0s, vid_cap, s)
-            ] = frame_idx
-        
+                executor.submit(
+                    runEverything,
+                    frame_idx,
+                    path,
+                    im,
+                    im0s,
+                    vid_cap,
+                    outputs,
+                    s,
+                    device,
+                    half,
+                    save_dir,
+                    visualize,
+                    augment,
+                    model,
+                    conf_thres,
+                    iou_thres,
+                    classes,
+                    agnostic_nms,
+                    max_det,
+                    write_to,
+                )
+            ] = [frame_idx, path, im, im0s, vid_cap, s]
+
         for future in concurrent.futures.as_completed(all):
-            try:
-                data = future.result()
-            except Exception as exc:
-                print("generated an exception: %s" % (exc))
-            else:
-                print("done")
+            [frame_idx, path, im, im0s, vid_cap, s] = all[future]
+            dt, seen = future.result()
 
     # Print results
     t = tuple(x / seen * 1e3 for x in dt)  # speeds per image
