@@ -8,6 +8,48 @@ import math
 from collections import deque, defaultdict
 
 
+def format_results_for_api(self):
+    # General statistics
+    general_stats = {
+        "Number of frames": len(self.frames),
+        "Duration": self.calculate_game_duration(),
+        "Highest scoring player": self.identify_highest_scoring_player(),
+    }
+
+    # Player statistics
+    player_stats = {
+        player_id: {
+            "Points": player_state.points,
+            # To be implemented
+            "Rebounds": self.calculate_rebounds(player_id),
+            "Assists": sum(player_state.passes.values()),
+        }
+        for player_id, player_state in self.players.items()
+    }
+
+    # Team statistics
+    team_stats = {
+        "Team 1": {
+            "Score": self.team1.points,
+            # To be implemented
+            "Possession": self.calculate_possession_time("Team 1"),
+        },
+        "Team 2": {
+            "Score": self.team2.points,
+            # To be implemented
+            "Possession": self.calculate_possession_time("Team 2"),
+        },
+    }
+
+    # Combine all statistics into a single dictionary
+    formatted_results = {
+        "general_stats": general_stats,
+        "player_stats": player_stats,
+        "team_stats": team_stats,
+    }
+
+    return formatted_results
+
 
 # maintains dictionary functionality, if desired:
 def todict(obj):
@@ -249,7 +291,7 @@ class PlayerFrame:
             return
 
         for i in range(len(KeyPointNames.list)):
-            x, y = keypoints[2 * i : 2 * i + 2]
+            x, y = keypoints[2 * i: 2 * i + 2]
             confidence = 1  # can put into confidence later
             key = KeyPointNames.list[i]
             self.keypoints[key] = Keypoint(x, y, confidence)
@@ -353,7 +395,8 @@ class Frame:
         "frame number, Required: non-negative integer"
 
         # MUTABLE
-        self.players: dict[str, PlayerFrame] = {}  # ASSUMPTION: MULITPLE PEOPLE
+        # ASSUMPTION: MULITPLE PEOPLE
+        self.players: dict[str, PlayerFrame] = {}
         "dictionary of form {player_[id] : PlayerFrame}"
         self.ball: BallFrame = None  # ASSUMPTION: SINGLE BALLS
         "dictionary of form {ball_[id] : BallFrame}"
@@ -588,93 +631,13 @@ class GameState:
             for c in self.passes[p]:
                 self.players[p].passes.update({c: self.passes[p][c]})
 
-    def recompute_possesssions(self):
-        "naively compute frame-by-frame possession of ball"
-        for frame in self.frames:
-            if frame.ball is None:
-                frame.possessions = []
-                continue
-            lst: list[(str, int)] = []
-            ball: Box = frame.ball.box
-            for id, p in frame.players.items():
-                a: int = p.box.area_of_intersection(ball)
-                if a == 0:
-                    continue
-                lst.append((id, a))
-
-            sorted_lst: list[(str, int)] = sorted(
-                lst, key=lambda x: x[1]
-            )  # sorted from least to greatest intersect
-            frame.possessions = [x for (x, _) in sorted_lst]
-
-    def recompute_possession_list(self, threshold=20, join_threshold=20):
-        """
-        Recompute posssession list with frame possession minimum [threshold].
-        Requires at least one frame
-        """
-        lst = []
-        prev = None
-        while lst != prev:  # until lists have converged
-            prev = lst.copy()
-            self.grow_poss(lst)
-            self.join_poss(lst, threshold)
-            self.filter_poss(lst, join_threshold)
-        self.possessions = lst
-
-    def grow_poss(self, lst: list) -> None:
-        """
-        modifies possession list [lst] with more possession, if available
-
-        """
-        i = 0
-        fi = 0
-        while fi < len(self.frames):
-            f: Frame = self.frames[fi]
-            frame = f.frameno
-            poss = f.possessions
-
-            if i >= len(lst):
-                s = sys.maxsize  # ensures new poss frame added
-            else:
-                pi: Interval = lst[i]  # assume well-defined
-                s = pi.start
-
-            if len(poss) == 0 or s <= frame:  # skip when nothing
-                fi += 1  # next frame
-                continue
-            else:  # frame < start
-                p = poss.pop()  # pop last player, most likely intersect
-                lst.insert(i, Interval(p, frame, frame))
-                i += 1  # next interval
-
-    def join_poss(self, lst: list, threshold: int = 20):  # possiblility of mapreduce
-        "modifies posssession list to join same player intervals within threshold frames"
-        i = 0
-        while i < len(lst) - 1:
-            p1: Interval = lst[i]
-            p2: Interval = lst[i + 1]
-
-            if p1.playerid == p2.playerid and p2.start - p1.end <= threshold:
-                lst.pop(i)
-                lst.pop(i)
-                p = Interval(p1.playerid, p1.start, p2.end)
-                lst.insert(i, p)
-            else:
-                i += 1  # next interval pair
-
-    def filter_poss(self, lst: list, threshold: int = 20):
-        "modifies posssession list to join same player intervals within threshold frames"
-        i = 0
-        while i < len(lst):
-            p: Interval = lst[i]
-            if p.length < threshold or p.playerid not in self.players:
-                lst.pop(i)
-            else:
-                i += 1  # next interval
-
     def recompute_frame_count(self):
-        "recompute frame count of all players in frames"
-        for ps in self.players.values():  # reset to 0
+        """
+        Recompute the frame count for each player ID in the video frames.
+        This count represents the total number of frames each player ID appears in the video
+        and can be used to adjust for noise in reassigned player IDs.
+        """
+        for ps in self.players.values():  # Reset frame count to 0 for all players
             ps.frames = 0
         for frame in self.frames:
             for pid in frame.players:
@@ -705,171 +668,3 @@ class GameState:
             p1 = self.possessions[i].playerid
             p2 = self.possessions[i + 1].playerid
             self.passes[p1][p2] += 1
-
-    def recompute_possessions_v1(self):
-        "Compute frame-by-frame possession of ball with a rolling window of 30 frames"
-        # Dictionary to track frequency of possessions in the last 30 frames
-        possession_frequency = {}
-        # Queue to maintain the rolling window of past 30 frames
-        recent_possessions = deque(maxlen=20)
-        proximity_threshold = 250
-
-        for index, frame in enumerate(self.frames):
-            if frame.ball is None:
-                # Repeat the same possession frame as the leader of the previous possessions
-                if recent_possessions:
-                    frame.possessions = list(recent_possessions[-1])
-                else:
-                    frame.possessions = []
-                continue
-
-            distance_list: list[(str, float)] = []
-            ball_box: Box = frame.ball.box
-
-            for player_id, player in frame.players.items():
-                dist: float = player.box.distance_between_boxes(ball_box)
-
-                # Apply stronger advantage for players with frequent previous possession
-                dist *= 0.9 ** possession_frequency.get(player_id, 0)
-
-                if dist <= proximity_threshold:
-                    distance_list.append((player_id, dist))
-
-            # Sort by adjusted distance, closest first
-            distance_list.sort(key=lambda x: x[1])
-            frame.possessions = [player_id for player_id, _ in distance_list][:3]
-
-            # Update possession frequency and recent possessions
-            for player_id in frame.possessions:
-                possession_frequency[player_id] = (
-                    possession_frequency.get(player_id, 0) + 1
-                )
-            recent_possessions.append(set(frame.possessions))
-
-            print(f"Frame {index}: {frame.possessions}")
-
-    # TODO replace current recompute possesions with this more nuanced function
-    def compute_possession_intervals_AFK(
-        self, window_size=30, min_interval_length=20, possession_threshold=0.8
-    ):
-        possession_history = deque(maxlen=window_size)
-        possession_intervals = []
-        current_possession = None
-
-        for frame_index, frame in enumerate(self.frames):
-            # Update possession history with weighted points
-            if frame.possessions:
-                # Assign points: 1 for first, 0.75 for second, 0.5 for third
-                for i, possessor in enumerate(frame.possessions[:3]):
-                    points = [1, 0.75, 0.5][i]
-                    possession_history.append((possessor, points))
-            else:
-                possession_history.append((None, 0))
-
-            # Count weighted possessions in the last 30 frames
-            possession_counts = defaultdict(float)
-            for possessor, points in possession_history:
-                if possessor is not None:
-                    possession_counts[possessor] += points
-
-            # Determine the player with the most possession points in the last 30 frames
-            if possession_counts:
-                most_possessor, total_points = max(
-                    possession_counts.items(), key=lambda item: item[1]
-                )
-                if (
-                    total_points / sum([p for _, p in possession_history])
-                    >= possession_threshold
-                ):
-                    # Update or create possession interval
-                    if (
-                        current_possession
-                        and current_possession.playerid == most_possessor
-                    ):
-                        current_possession.end = frame_index
-                    else:
-                        if (
-                            current_possession
-                            and (current_possession.end - current_possession.start + 1)
-                            >= min_interval_length
-                        ):
-                            possession_intervals.append(current_possession)
-                        current_possession = Interval(
-                            most_possessor, frame_index, frame_index
-                        )
-                else:
-                    if (
-                        current_possession
-                        and (current_possession.end - current_possession.start + 1)
-                        >= min_interval_length
-                    ):
-                        possession_intervals.append(current_possession)
-                    current_possession = None
-            else:
-                if (
-                    current_possession
-                    and (current_possession.end - current_possession.start + 1)
-                    >= min_interval_length
-                ):
-                    possession_intervals.append(current_possession)
-                current_possession = None
-
-        # Add the last possession interval if it meets the minimum frame requirement
-        if (
-            current_possession
-            and (current_possession.end - current_possession.start + 1)
-            >= min_interval_length
-        ):
-            possession_intervals.append(current_possession)
-
-        self.possessions = possession_intervals
-
-        return possession_intervals
-
-    # TODO THIS SUCKS, replace
-    def compute_possession_intervals(self, consecutive_possession_threshold=8):
-        current_possession = None
-        possession_intervals = []
-        current_streak = 0
-        last_possessor = None
-
-        for frame_index, frame in enumerate(self.frames):
-            if frame.possessions:
-                most_likely_possessor = frame.possessions[0]
-
-                if last_possessor == most_likely_possessor:
-                    current_streak += 1
-                else:
-                    current_streak = 1
-                    last_possessor = most_likely_possessor
-
-                if current_streak >= consecutive_possession_threshold:
-                    if (
-                        current_possession
-                        and current_possession.playerid == most_likely_possessor
-                    ):
-                        current_possession.end = frame_index
-                    elif current_possession:
-                        possession_intervals.append(current_possession)
-                        current_possession = Interval(
-                            most_likely_possessor, frame_index, frame_index
-                        )
-                    else:
-                        current_possession = Interval(
-                            most_likely_possessor, frame_index, frame_index
-                        )
-
-            """else:  # No clear possessor in the current frame
-                current_streak = 0
-                last_possessor = None
-                if current_possession:
-                    possession_intervals.append(current_possession)
-                    current_possession = None
-            """
-        # Add the last possession interval if it exists
-        if current_possession:
-            possession_intervals.append(current_possession)
-
-        self.possessions = possession_intervals
-
-        return possession_intervals
