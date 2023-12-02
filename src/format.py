@@ -1,6 +1,6 @@
 # results_formatter.py
 import json
-from state import GameState  # Assuming GameState class is in state.py
+from .state import GameState  # Assuming GameState class is in state.py
 class Format:
     def results():
         return format_results_for_api(GameState)
