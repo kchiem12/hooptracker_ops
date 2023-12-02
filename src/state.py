@@ -475,6 +475,8 @@ class PlayerState:
         self.points: int = 0
         self.field_goal_percentage: float = 0.0
         self.passes: dict[int] = {}
+        self.assists: int = 0
+        self.rebounds: int = 0
 
 
 class TeamStats:

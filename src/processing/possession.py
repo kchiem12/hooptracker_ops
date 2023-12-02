@@ -1,33 +1,38 @@
-
 from state import Interval
 from collections import deque
+from state import PlayerState
 
 
 class PossessionComputer:
-    def __init__(self, frames):
+    def __init__(self, frames, players):
+        self.players = players
         self.frames = frames
         self.rolling_scores = []
         self.dominant_possessions = []
         self.possessions = []
 
     def compute_possessions(self):
+        self._filter_players(threshold=min(100, len(self.frames) / 3))
         self._compute_frame_rankings()
         self._compute_rolling_scores()
         self._determine_dominant_possessions()
         self._create_possession_intervals(min_length=15)
+        self._filter_intervals()
 
-        # for interval in self.possessions:
-        # print(interval.playerid, interval.start, interval.end)
+        for interval in self.possessions:
+            print(
+                f"Player {interval.playerid}: Start {interval.start}, End {interval.end}, Length {interval.length}")
 
         return self.possessions
 
-    # TODO give no one possession during shots
-    def _compute_frame_rankings(self):
+    def _compute_frame_rankings(self, DISTANCE_THRESHOLD=100):
         """
         Compute frame-by-frame possession of the ball.
         Players are ranked based on their distance to the ball and the intersection area.
         The ranks are added together, and the player with the lowest score is considered
         the most likely possessor.
+        Only consider players within a distance of X from the ball and who have a non-zero
+        intersection area with the ball.
         """
         for index, frame in enumerate(self.frames):
             if frame.ball is None:
@@ -42,9 +47,11 @@ class PossessionComputer:
                 dist = player.box.distance_between_boxes(ball_box)
                 intersection_area = player.box.area_of_intersection(ball_box)
 
-                distance_ranking.append((player_id, dist))
-                # Negative area for sorting purpose
-                area_ranking.append((player_id, -intersection_area))
+                # Check if player is within range X and has intersection area
+                if dist <= DISTANCE_THRESHOLD and intersection_area > 0:
+                    distance_ranking.append((player_id, dist))
+                    # Negative area for sorting purpose
+                    area_ranking.append((player_id, -intersection_area))
 
             # Rank players by distance (lower is better) and intersection area (higher is better)
             distance_ranking.sort(key=lambda x: x[1])
@@ -99,8 +106,8 @@ class PossessionComputer:
             # Dictionary to sum up scores in the rolling window for each player
             rolling_sum = {}
 
-            # Accumulate scores for each player in the rolling window of the last 50 frames
-            for j in range(max(0, i - 49), i + 1):
+            # Accumulate scores for each player in the rolling window of the last 20 frames
+            for j in range(max(0, i - 20), i + 1):
                 for player_id, score in self.rolling_scores[j].items():
                     rolling_sum[player_id] = rolling_sum.get(
                         player_id, 0) + score
@@ -134,9 +141,13 @@ class PossessionComputer:
         if current_interval:
             self.possessions.append(current_interval)
 
-    def _remove_short_intervals(self, min_length):
+        self.possessions = [
+            interval for interval in self.possessions if interval.playerid is not None]
+
+    def _remove_short_intervals(self, min_length, min_length_none=5):
         """
-        Remove short intervals from the dominant possessions list. Helper function for _create_possession_intervals
+        Remove short intervals from the dominant possessions list. Helper function for _create_possession_intervals.
+        Different minimum lengths are used for None player IDs and valid player IDs.
         """
         cleaned_possessions = []
         current_player = None
@@ -144,18 +155,50 @@ class PossessionComputer:
 
         for i, player_id in enumerate(self.dominant_possessions):
             if player_id != current_player:
-                if i - start_index >= min_length:
+                # Determine the minimum length based on whether the player ID is None
+                current_min_length = min_length_none if current_player is None else min_length
+
+                if i - start_index >= current_min_length:
                     for index in range(start_index, i):
                         cleaned_possessions.append((index, current_player))
                 start_index = i
                 current_player = player_id
 
         # Check the last interval
-        if len(self.dominant_possessions) - start_index >= min_length:
+        # Determine the minimum length for the last interval
+        final_min_length = min_length_none if current_player is None else min_length
+        if len(self.dominant_possessions) - start_index >= final_min_length:
             for index in range(start_index, len(self.dominant_possessions)):
                 cleaned_possessions.append((index, current_player))
 
         return cleaned_possessions
+
+    def _filter_intervals(self):
+        """
+        Filter out intervals that are not about a valid player.
+        """
+        self.possessions = [
+            interval for interval in self.possessions if interval.playerid is not None and interval.playerid in list(self.players.keys())]
+
+    def recompute_frame_count(self):
+        "recompute frame count of all players in frames"
+        for ps in self.players.values():  # reset to 0
+            ps.frames = 0
+        for frame in self.frames:
+            for pid in frame.players:
+                if pid not in self.players:
+                    self.players.update({pid: PlayerState()})
+                self.players.get(pid).frames += 1
+
+    def _filter_players(self, threshold: int):
+        "removes all players which appear for less than [threshold] frames"
+        self.recompute_frame_count()
+        for k in list(self.players.keys()):
+            v: PlayerState = self.players.get(k)
+            if v.frames < threshold:
+                self.players.pop(k, None)
+                for frame in self.frames:
+                    frame.players.pop(k, None)
 
 
 '''
