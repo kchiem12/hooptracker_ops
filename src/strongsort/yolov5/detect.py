@@ -543,7 +543,7 @@ def run(
                 vid_writer[i].write(im0)
 
             prev_frames[i] = curr_frames[i]
-        return dt, seen
+        return dt, seen, save_path
 
     # Run tracking
     model.warmup(imgsz=(1 if pt else nr_sources, 3, *imgsz))  # warmup
@@ -583,7 +583,7 @@ def run(
 
         for future in concurrent.futures.as_completed(all):
             [frame_idx, path, im, im0s, vid_cap, s] = all[future]
-            dt, seen = future.result()
+            dt, seen, save_path = future.result()
 
     # Print results
     t = tuple(x / seen * 1e3 for x in dt)  # speeds per image
