@@ -69,6 +69,38 @@ def process_video(video_file):
         return False
     return True
 
+def upload(video_file):
+    user_video: str = st.session_state.user_file
+    if video_file is None:
+        print("No video")
+    else:
+        r = requests.post(
+            SERVER_URL + "upload", files={"video_file": video_file}, timeout=120
+        )
+        if r.status_code == 200:
+            print("Successfully uploaded file")
+            data = r.json()
+            print(data)
+            st.session_state.upload_name = data.get("message")
+            with open(user_video, "wb") as f:  # TODO is local write; temp fix
+                f.write(video_file.getvalue())
+        else:
+            print("Error uploading file")  # TODO make an error handler in frontend
+            return False
+        st.session_state.is_downloaded = False
+
+def health_check():
+    r = requests.get(
+        SERVER_URL, timeout=120
+    )
+    if r.status_code == 200:
+        print("Successfully got file")
+        data = r.json()
+        print(data.get("message"))
+    else:
+        print("Error getting file")  # TODO make an error handler in frontend
+        return False
+    st.session_state.is_downloaded = False
 
 # Pages
 def main_page():
@@ -107,7 +139,7 @@ def loading_page():
         "",
         hc.Loaders.pulse_bars,
     ):
-        finished = process_video(video_file=st.session_state.video_file)
+        finished = upload(video_file=st.session_state.video_file)
         if finished:
             state = 2
         else:
