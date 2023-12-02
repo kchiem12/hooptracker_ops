@@ -1,6 +1,6 @@
 venv
 .env
-__pycache__
+*__pycache__*
 yolov8m-pose.pt
 *.mp4
 tmp/
