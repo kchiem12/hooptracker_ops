@@ -294,6 +294,7 @@ def run(
                     )  # get folder name containing current img
                     save_path = str(save_dir / p.parent.name)  # im.jpg, vid.mp4, ...
             curr_frames[i] = im0
+            assert im0 is not None
 
             txt_path = str(save_dir / "tracks" / txt_file_name)  # im.txt
             if write_to is None:
@@ -543,6 +544,7 @@ def run(
                 vid_writer[i].write(im0)
 
             prev_frames[i] = curr_frames[i]
+            assert prev_frames[i] is not None
         return dt, seen, save_path
 
     # Run tracking
