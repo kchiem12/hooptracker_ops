@@ -66,6 +66,7 @@ def compute_stats(state:GameState):
         for inte in state.possessions:
             if inte.start >= shot.end:
                 idx_after = state.possessions.index(inte)
+                break
 
         if shot.made:
             team.shots_made += 1

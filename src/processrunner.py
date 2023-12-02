@@ -64,6 +64,8 @@ class ProcessRunner:
         videoRender.reencode(self.args["minimap_file"], self.args["minimap_temp_file"])
 
     def run_video_processor(self):
+        if self.args["skip_video"]:
+            return
         video_creator = video.VideoCreator(
             self.state, self.args["video_file"], self.args["processed_file"]
         )
