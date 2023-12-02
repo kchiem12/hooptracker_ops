@@ -1,6 +1,7 @@
 from state import GameState, PlayerFrame, BallFrame, Box
 from args import DARGS
 
+
 class ActionRecognition:
     def __init__(self, state: GameState, args=DARGS) -> None:
         self.state = state
@@ -37,14 +38,13 @@ class ActionRecognition:
                 curr += 0.075
         return curr
 
-
     def ball_shot(self, ball_frame: BallFrame, rim: Box):
         """
         Takes in ball data at a frame and returns the weighted sum of the ball
         features. Currently uses a simple threshold heuristic.
         """
         # checks whether ball y coord is above rim y coord
-        if ball_frame is None:
+        if ball_frame is None or rim is None:
             return 0
         ball_pos = ball_frame.box
         mid_box = ball_pos.center()
@@ -60,7 +60,6 @@ class ActionRecognition:
 
         # return y_weight + displacement_weight
         return y_weight + 0.1
-
 
     def shot_detect(self):
         """
@@ -80,10 +79,12 @@ class ActionRecognition:
                     # shots_file.write(str(player_id))
                     # shots_file.write("\n")
                     for interval in self.state.possessions:
-                        if (interval.start <= frame.frameno <= interval.end and 
-                            interval not in self.state.shots):
+                        if (
+                            interval.start <= frame.frameno <= interval.end
+                            and interval not in self.state.shots
+                        ):
                             self.state.shots.append(interval)
-                    #shot_interval = (frame.frameno, player_id)
-                    #self.state.shots.append(shot_interval)
+                    # shot_interval = (frame.frameno, player_id)
+                    # self.state.shots.append(shot_interval)
 
         # shots_file.close()
