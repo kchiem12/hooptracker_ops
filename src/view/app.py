@@ -6,7 +6,8 @@ import streamlit as st
 import hydralit_components as hc
 import pandas as pd
 import requests
-from format import Format
+import zipfile
+import shutil
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from main import main
@@ -21,7 +22,7 @@ st.set_page_config(page_title="HoopTracker", page_icon=":basketball:")
 if "state" not in st.session_state:
     st.session_state.state = 0
     st.session_state.logo = "src/view/static/basketball.png"
-    with open("data/training_data.mp4", "rb") as file:
+    with open("data/short_new_1.mp4", "rb") as file:
         st.session_state.video_file = io.BytesIO(file.read())
     st.session_state.processed_video = None
     st.session_state.result_string = None
@@ -38,6 +39,10 @@ def process_video(video_file):
     the processed video name into session state
     Temporarily: stores the processed video into tmp/user_upload.mp4
     """
+
+    # delete any unzipped files
+    shutil.rmtree("unzipped_files", ignore_errors=True)
+
     user_video: str = st.session_state.user_file
     # UPLOAD VIDEO
     if video_file is None:
@@ -49,8 +54,8 @@ def process_video(video_file):
         print("Successfully uploaded file")
         data = r.json()
         st.session_state.upload_name = data.get("message")
-        with open(user_video, "wb") as f:  # TODO is local write; temp fix
-            f.write(video_file.getvalue())
+        # with open(user_video, "wb") as f:  # TODO is local write; temp fix
+        #     f.write(video_file.getvalue())
     else:
         print("Error uploading file")  # TODO make an error handler in frontend
         return False
@@ -58,18 +63,85 @@ def process_video(video_file):
 
     # PROCESS VIDEO
     print("User Video", user_video)
+    print("Upload Name", st.session_state.upload_name)
+    
     # ASSUME process updates results locally for now TODO
-    r = requests.post(SERVER_URL + "results", params={})
+    r = requests.post(SERVER_URL + "process", params={"file_name": st.session_state.upload_name})
     if r.status_code == 200:
         print(r.json().get("message"))
-        with open("tmp/results.txt", "r") as file:
-            st.session_state.result_string = file.read()
-        st.session_state.processed_video = "tmp/court_video_reenc.mp4"
+        # with open("tmp/results.txt", "r") as file:
+        #     st.session_state.result_string = file.read()
+        # st.session_state.processed_video = "tmp/court_video_reenc.mp4"
     else:
         print(f"Error processing file: {r.text}")
         return False
-    return True
 
+    return download_results(st.session_state.upload_name)
+
+def upload(video_file):
+    user_video: str = st.session_state.user_file
+    if video_file is None:
+        print("No video")
+    else:
+        r = requests.post(
+            SERVER_URL + "upload", files={"video_file": video_file}, timeout=120
+        )
+        if r.status_code == 200:
+            print("Successfully uploaded file")
+            data = r.json()
+            print(data)
+            st.session_state.upload_name = data.get("message")
+            with open(user_video, "wb") as f:  # TODO is local write; temp fix
+                f.write(video_file.getvalue())
+        else:
+            print("Error uploading file")  # TODO make an error handler in frontend
+            return False
+        st.session_state.is_downloaded = False
+
+def health_check():
+    r = requests.get(
+        SERVER_URL, timeout=120
+    )
+    if r.status_code == 200:
+        print("Successfully got file")
+        data = r.json()
+        print(data.get("message"))
+    else:
+        print("Error getting file")  # TODO make an error handler in frontend
+        return False
+    st.session_state.is_downloaded = False
+
+def download_results(upload_name):
+    r = requests.get(f"{SERVER_URL}download/{upload_name}")
+    if r.status_code == 200:
+        zip_file_path = "downloaded_files.zip"
+        with open(zip_file_path, "wb") as file:
+            file.write(r.content)
+
+        # unzip the files
+        unzip_dir = "unzipped_files"
+        os.makedirs(unzip_dir, exist_ok=True)
+
+        # unzip the files
+        with zipfile.ZipFile(zip_file_path, 'r') as zip_ref:
+            zip_ref.extractall(unzip_dir)
+
+        processed_video_path = os.path.join(unzip_dir, f"court_video_reenc-{upload_name}.mp4")
+        result_string_path = os.path.join(unzip_dir, f"results-{upload_name}.txt")
+        st.session_state.result_string_path=result_string_path
+        with open(result_string_path, "r") as file:
+            st.session_state.result_string = file.read()
+        print(st.session_state.result_string)
+        st.session_state.processed_video = processed_video_path
+
+        # clean up temporary directory
+        if os.path.exists(zip_file_path):
+            os.remove(zip_file_path)
+
+        return True
+    else:
+        print(f"Error downloading file: {r.text}")
+        return False
 
 # Pages
 def main_page():
@@ -108,7 +180,7 @@ def loading_page():
         "",
         hc.Loaders.pulse_bars,
     ):
-        finished = process_video(video_file=st.session_state.video_file)
+        finished = process_video(st.session_state.video_file)
         if finished:
             state = 2
         else:
@@ -131,25 +203,95 @@ def results_page():
  #here we need to add the call for the videos
 
 
-    response = requests.get(SERVER_URL + "video")
-    if response.status_code == 200:
-        video_bytes = response.content()  # Returns the formatted results as JSON
-        video_bytes = response
-        st.video(video_bytes)
-    else:
-        st.header ("error- Failed to retrieve data from the backend.")
-
+    
     
     st.markdown("## Statistics")
-    formatted_results = get_formatted_results()
-    if formatted_results:
-        st.json(formatted_results)
-    process_results()
+
+    # Adjusting the function to start parsing from the specific marker and display a sample output
+    def parse_file_for_correct_section(file_path, start_marker):
+        data = ""
+        recording = False
+        with open(file_path, 'r') as file:
+            for line in file:
+                # Start recording when the start marker is found
+                if start_marker in line:
+                    recording = True
+                    data += line[line.find(start_marker):]  # Append from the start marker
+                    continue
+                # Continue recording after the start marker is found
+                if recording:
+                    data += line
+                    # Stop recording at the first closing brace '}' after recording starts
+                    if '}' in line and not '{' in line:
+                        break
+        return data
+
+# Define the specific start marker
+    start_marker = "{'player_1': {'frames':"
+
+# Parse the file for the specific section starting at the defined marker
+    parsed_correct_section = parse_file_for_correct_section(st.session_state.result_string_path, start_marker)
+
+    def extract_player_team_stats(data_str):
+        formatted_players = ""
+        formatted_team1 = ""
+        formatted_team2 = ""
+        current_team = None
+
+        lines = data_str.split(',')
+
+        for line in lines:
+            
+            if "'team1'" in line:
+                current_team = 'team1'
+            elif "'team2'" in line:
+                current_team = 'team2'
+            if any(key in line for key in ['frames']):
+                line = line.replace("{", "").replace("}", "").replace("'", "")
+                formatted_players +="\n"+ line.strip() + "\n"
+            if any(key in line for key in ['field_goals_attempted', 'field_goals', 'points', 'field_goal_percentage']):
+                line = line.replace("{", "").replace("}", "").replace("'", "")
+                formatted_players += line.strip() + "\n"
+
+
+            elif any(key in line for key in ['shots_attempted', 'shots_made', 'points', 'field_goal_percentage']):
+                line = line.replace("{", "").replace("}", "").replace("'", "").strip()
+                if current_team == 'team1':
+                    formatted_team1 += line + "\n"
+                elif current_team == 'team2':
+                    formatted_team2 += line + "\n"
+        if "ball:" in formatted_players:
+            formatted_players = formatted_players.split("ball:")[0]
+
+        return formatted_players, formatted_team1, formatted_team2
+
+    formatted_players, formatted_team1, formatted_team2 = extract_player_team_stats(parsed_correct_section)
+
+    def display_stats():
+        st.markdown("### Player Statistics")
+        st.text(formatted_players)
+
+        st.markdown("### Team 1 Statistics")
+        st.text(formatted_team1)
+
+        st.markdown("### Team 2 Statistics")
+        st.text(formatted_team2)
+
+# Call the function in your Streamlit app
+
+
+# Call the function in your Streamlit app
+    display_stats()
+    st.markdown("## Processed Video")
+    try:
+        st.video(st.session_state.processed_video)
+    except Exception as e:
+        st.error("Processed video not found.")
     st.download_button(
         label="Download Results",
         use_container_width=True,
         data=st.session_state.result_string,
-        file_name="results.txt",
+        file_name=st.session_state.result_string_path,
     )
   
 
@@ -364,7 +506,7 @@ elif st.session_state.state == 0:
 elif st.session_state.state == 1:
     loading_page()
 elif st.session_state.state == 2:
-    results_page(get_res())
+    results_page()
 else:
     error_page()
 
