@@ -5,10 +5,11 @@ class LinearTrendline:
         self.args = args
         self.state = state
         self.video_path = args["video_file"]
-        self.fps = 30  # Assume FPS is 30
+        self.fps = 30
+        self.velocity_smoothing = 3
 
     def calculate_velocity(self):
-        # Calculate the velocity between each pair of frames
+        velocities = []
         for i in range(1, len(self.state.frames)):
             frame1 = self.state.frames[i - 1]
             frame2 = self.state.frames[i]
@@ -17,16 +18,22 @@ class LinearTrendline:
                 x_center1, y_center1 = frame1.ball.box.center()
                 x_center2, y_center2 = frame2.ball.box.center()
 
-                # Time difference in seconds (assuming fps is 30)
                 time_diff = 1 / self.fps
-
-                # Velocity components
+                time_diff = 1
                 vx = (x_center2 - x_center1) / time_diff
                 vy = (y_center2 - y_center1) / time_diff
 
-                # Store these velocities in frame2's ball
-                frame2.ball.vx = vx
-                frame2.ball.vy = vy
+                velocities.append((vx, vy))
+
+                if len(velocities) > self.velocity_smoothing:
+                    velocities.pop(0)
+
+                avg_vx = sum(v[0] for v in velocities) / len(velocities)
+                avg_vy = sum(v[1] for v in velocities) / len(velocities)
+                # print(f"Frame {i}: Velocity - vx: {avg_vx:.2f}, vy: {avg_vy:.2f}")
+
+                frame2.ball.vx = avg_vx
+                frame2.ball.vy = avg_vy
 
     def estimate_missing_positions(self):
         for i in range(len(self.state.frames)):
@@ -74,7 +81,61 @@ class LinearTrendline:
 
         return Box(xmin_pred, ymin_pred, xmax_pred, ymax_pred, predicted=True)
 
+    # tried using acceleration, didn't work
+    # def calculate_acceleration(self):
+    #     for i in range(2, len(self.state.frames)):
+    #         frame0 = self.state.frames[i - 2]
+    #         frame1 = self.state.frames[i - 1]
+    #         frame2 = self.state.frames[i]
+
+    #         if frame0.ball and frame1.ball and frame2.ball:
+    #             vx1 = frame1.ball.vx
+    #             vy1 = frame1.ball.vy
+
+    #             vx2 = frame2.ball.vx
+    #             vy2 = frame2.ball.vy
+
+    #             time_diff = 1 / self.fps
+    #             time_diff = 1
+
+    #             ax = (vx2 - vx1) / time_diff
+    #             ay = (vy2 - vy1) / time_diff
+    #             # print(f"Frame {i}: Acceleration - ax: {ax:.2f}, ay: {ay:.2f}")
+
+    #             frame2.ball.ax = ax
+    #             frame2.ball.ay = ay
+
+    # def detect_abrupt_changes(self, acceleration_threshold=500):
+    #     for i in range(len(self.state.frames)):
+    #         frame = self.state.frames[i]
+    #         if frame.ball and hasattr(frame.ball, 'ax') and hasattr(frame.ball, 'ay'):
+    #             # Dynamic threshold
+    #             dynamic_threshold = acceleration_threshold * (1 + (abs(frame.ball.vx) + abs(frame.ball.vy)) / 100)
+    #             if abs(frame.ball.ax) > dynamic_threshold or abs(frame.ball.ay) > dynamic_threshold:
+    #                 frame.ball = None
+
+    def is_spatial_change_abrupt(self, current_frame, spatial_threshold=70, window_size=15):
+        if current_frame.ball:
+            x2, y2 = current_frame.ball.box.center()
+
+            # Look back up to 30 frames
+            for j in range(1, min(window_size + 1, current_frame.frameno)):
+                prev_frame = self.state.frames[current_frame.frameno - j]
+                if prev_frame.ball:
+                    x1, y1 = prev_frame.ball.box.center()
+
+                    distance = ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5
+                    if distance > spatial_threshold:
+                        print(f"Frame {current_frame.frameno}: Abrupt spatial change detected. Distance: {distance:.2f}")
+                        return True
+                    break
+
+        return False
+
     def process(self):
         self.calculate_velocity()
+        for i in range(len(self.state.frames)):
+            if self.is_spatial_change_abrupt(self.state.frames[i]):
+                self.state.frames[i].ball = None
         self.estimate_missing_positions()
         return self.state

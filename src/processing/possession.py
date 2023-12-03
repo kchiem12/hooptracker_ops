@@ -19,9 +19,9 @@ class PossessionComputer:
         self._create_possession_intervals(min_length=15)
         self._filter_intervals()
 
-        for interval in self.possessions:
-            print(
-                f"Player {interval.playerid}: Start {interval.start}, End {interval.end}, Length {interval.length}")
+        # for interval in self.possessions:
+        #     print(
+        #         f"Player {interval.playerid}: Start {interval.start}, End {interval.end}, Length {interval.length}")
 
         return self.possessions
 
