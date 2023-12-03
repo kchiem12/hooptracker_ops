@@ -6,6 +6,8 @@ import streamlit as st
 import hydralit_components as hc
 import pandas as pd
 import requests
+import zipfile
+import shutil
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from main import main
@@ -28,7 +30,7 @@ if "state" not in st.session_state:
     st.session_state.user_file = "tmp/user_upload.mp4"
 
 # Backend Connection
-SERVER_URL = "http://127.0.0.1:8000/"
+SERVER_URL = "http://35.171.133.54:8000/"
 
 
 def process_video(video_file):
@@ -37,6 +39,10 @@ def process_video(video_file):
     the processed video name into session state
     Temporarily: stores the processed video into tmp/user_upload.mp4
     """
+
+    # delete any unzipped files
+    shutil.rmtree("unzipped_files", ignore_errors=True)
+
     user_video: str = st.session_state.user_file
     # UPLOAD VIDEO
     if video_file is None:
@@ -48,8 +54,8 @@ def process_video(video_file):
         print("Successfully uploaded file")
         data = r.json()
         st.session_state.upload_name = data.get("message")
-        with open(user_video, "wb") as f:  # TODO is local write; temp fix
-            f.write(video_file.getvalue())
+        # with open(user_video, "wb") as f:  # TODO is local write; temp fix
+        #     f.write(video_file.getvalue())
     else:
         print("Error uploading file")  # TODO make an error handler in frontend
         return False
@@ -57,17 +63,20 @@ def process_video(video_file):
 
     # PROCESS VIDEO
     print("User Video", user_video)
+    print("Upload Name", st.session_state.upload_name)
+    
     # ASSUME process updates results locally for now TODO
-    r = requests.post(SERVER_URL + "process", params={"file_name": user_video})
+    r = requests.post(SERVER_URL + "process", params={"file_name": st.session_state.upload_name})
     if r.status_code == 200:
         print(r.json().get("message"))
-        with open("tmp/results.txt", "r") as file:
-            st.session_state.result_string = file.read()
-        st.session_state.processed_video = "tmp/court_video_reenc.mp4"
+        # with open("tmp/results.txt", "r") as file:
+        #     st.session_state.result_string = file.read()
+        # st.session_state.processed_video = "tmp/court_video_reenc.mp4"
     else:
         print(f"Error processing file: {r.text}")
         return False
-    return True
+
+    return download_results(st.session_state.upload_name)
 
 def upload(video_file):
     user_video: str = st.session_state.user_file
@@ -101,6 +110,37 @@ def health_check():
         print("Error getting file")  # TODO make an error handler in frontend
         return False
     st.session_state.is_downloaded = False
+
+def download_results(upload_name):
+    r = requests.get(f"{SERVER_URL}download/{upload_name}")
+    if r.status_code == 200:
+        zip_file_path = "downloaded_files.zip"
+        with open(zip_file_path, "wb") as file:
+            file.write(r.content)
+
+        # unzip the files
+        unzip_dir = "unzipped_files"
+        os.makedirs(unzip_dir, exist_ok=True)
+
+        # unzip the files
+        with zipfile.ZipFile(zip_file_path, 'r') as zip_ref:
+            zip_ref.extractall(unzip_dir)
+
+        processed_video_path = os.path.join(unzip_dir, f"court_video_reenc-{upload_name}.mp4")
+        result_string_path = os.path.join(unzip_dir, f"results-{upload_name}.txt")
+
+        with open(result_string_path, "r") as file:
+            st.session_state.result_string = file.read()
+        st.session_state.processed_video = processed_video_path
+
+        # clean up temporary directory
+        if os.path.exists(zip_file_path):
+            os.remove(zip_file_path)
+
+        return True
+    else:
+        print(f"Error downloading file: {r.text}")
+        return False
 
 # Pages
 def main_page():
@@ -139,7 +179,7 @@ def loading_page():
         "",
         hc.Loaders.pulse_bars,
     ):
-        finished = upload(video_file=st.session_state.video_file)
+        finished = process_video(st.session_state.video_file)
         if finished:
             state = 2
         else:
