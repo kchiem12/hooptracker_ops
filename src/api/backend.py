@@ -70,7 +70,7 @@ async def process_file(file_name: str):
         results_path = "results-" + file_name + ".txt"
         court_reenc_path = "court_video_reenc-" + file_name + ".mp4"
         s3.upload_file("tmp/results.txt", "hooptracker-uploads", results_path)
-        s3.upload_file("tmp/court_video_reenc.mp4", "hooptracker-uploads", court_reenc_path)
+        s3.upload_file("tmp/processed.mp4", "hooptracker-uploads", court_reenc_path)
         return {"message": f"successfully processed {file_name}", "status": "success"}
     except Exception as ex:
         return {"error": str(ex)}
