@@ -203,25 +203,46 @@ def results_page():
  #here we need to add the call for the videos
 
 
-    response = requests.get(SERVER_URL + "video")
-    if response.status_code == 200:
-        video_bytes = response.content()  # Returns the formatted results as JSON
-        video_bytes = response
-        st.video(video_bytes)
-    else:
-        st.header ("error- Failed to retrieve data from the backend.")
-
+    
     
     st.markdown("## Statistics")
-    formatted_results = get_formatted_results()
-    if formatted_results:
-        st.json(formatted_results)
-    process_results()
+
+    try:
+        with open("tmp/results" +st.session_state.upload_name +".txt", "r") as file:
+            results_data = file.readlines()
+
+        current_section = None
+        results_table = []
+
+        # Process each line in the file
+        for line in results_data:
+            line = line.strip()
+            if line.endswith(":"):  # Check if the line is a section header
+                if results_table:  # Display the previous section's table, if any
+                    st.markdown(f"### {current_section}")
+                    st.table(results_table)
+                    results_table = []  # Reset for the next section
+                current_section = line[:-1]  # Set the new section header
+            elif ": " in line:
+                results_table.append(line.split(": "))
+
+        # Display the last section's table
+        if results_table:
+            st.markdown(f"### {current_section}")
+            st.table(results_table)
+
+    except FileNotFoundError:
+        st.error("Results file not found.")
+    st.markdown("## Processed Video")
+    try:
+        st.video(st.session_state.processed_video)
+    except Exception as e:
+        st.error("Processed video not found.")
     st.download_button(
         label="Download Results",
         use_container_width=True,
         data=st.session_state.result_string,
-        file_name="results.txt",
+        file_name="results" +st.session_state.upload_name +".txt",
     )
   
 
