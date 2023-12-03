@@ -1,5 +1,4 @@
 from state import GameState, Frame
-import Args
 
 
 class Clean:
