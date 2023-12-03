@@ -15,7 +15,7 @@ import shutil
 import sys
 import os
 
-from ..format import Format
+# from ..format import Format
 
 
 

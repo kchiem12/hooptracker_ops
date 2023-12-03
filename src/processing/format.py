@@ -1,5 +1,5 @@
 # results_formatter.py
-from ..state import GameState  # Adjust the import according to your project structure
+from state import GameState  # Adjust the import according to your project structure
 
 def results(game_state: GameState) -> str:
     """

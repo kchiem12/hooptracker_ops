@@ -22,7 +22,7 @@ st.set_page_config(page_title="HoopTracker", page_icon=":basketball:")
 if "state" not in st.session_state:
     st.session_state.state = 0
     st.session_state.logo = "src/view/static/basketball.png"
-    with open("data/training_data.mp4", "rb") as file:
+    with open("data/short_new_1.mp4", "rb") as file:
         st.session_state.video_file = io.BytesIO(file.read())
     st.session_state.processed_video = None
     st.session_state.result_string = None
@@ -30,7 +30,7 @@ if "state" not in st.session_state:
     st.session_state.user_file = "tmp/user_upload.mp4"
 
 # Backend Connection
-SERVER_URL = "http://35.171.133.54:8000/"
+SERVER_URL = "http://127.0.0.1:8000/"
 
 
 def process_video(video_file):
@@ -436,7 +436,7 @@ elif st.session_state.state == 0:
 elif st.session_state.state == 1:
     loading_page()
 elif st.session_state.state == 2:
-    results_page(get_res())
+    results_page()
 else:
     error_page()
 
