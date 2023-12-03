@@ -589,7 +589,7 @@ class GameState:
         """Computes team scores, player assists, and player rebounds"""
         for shot in self.shot_attempts:
             player = shot.playerid
-            team = self.team1 if player in self.team1.players else self.team2.players
+            team = self.team1 if player in self.team1.players else self.team2
             idx_after = -1
             for inte in self.possessions:
                 if inte.start >= shot.end:
