@@ -228,13 +228,14 @@ class BallFrame:
         vy: velocity in the y-direction
     """
 
-    def __init__(self, xmin: int, ymin: int, xmax: int, ymax: int) -> None:
+    def __init__(
+        self, xmin: int, ymin: int, xmax: int, ymax: int, id: str = None
+    ) -> None:
         # IMMUTABLE
         self.box: Box = Box(xmin, ymin, xmax, ymax)  # Bounding box
 
         # MUTABLE
-        self.playerid: int = None  # Last player in possession
-        self.type: BallType = None  # IN_POSSESSION, IN_TRANSITION, or OUT_OF_PLAY
+        self.ballid: str = id
         self.vx: float = None
         self.vy: float = None
 
@@ -291,7 +292,7 @@ class PlayerFrame:
             return
 
         for i in range(len(KeyPointNames.list)):
-            x, y = keypoints[2 * i: 2 * i + 2]
+            x, y = keypoints[2 * i : 2 * i + 2]
             confidence = 1  # can put into confidence later
             key = KeyPointNames.list[i]
             self.keypoints[key] = Keypoint(x, y, confidence)
@@ -399,6 +400,8 @@ class Frame:
         self.players: dict[str, PlayerFrame] = {}
         "dictionary of form {player_[id] : PlayerFrame}"
         self.ball: BallFrame = None  # ASSUMPTION: SINGLE BALLS
+        "ball of the frame"
+        self.ball_candidates: dict[str, BallFrame] = {}
         "dictionary of form {ball_[id] : BallFrame}"
         self.rim: Box = None  # ASSUMPTION: SINGLE RIM
         "bounding box of rim"
@@ -411,11 +414,11 @@ class Frame:
         id = "player_" + str(id)
         self.players.update({id: pf})
 
-    def set_ball_frame(self, id: int, xmin: int, ymin: int, xmax: int, ymax: int):
+    def add_ball_frame(self, id: int, xmin: int, ymin: int, xmax: int, ymax: int):
         "set ball in frame given id and bounding boxes"
-        bf = BallFrame(xmin, ymin, xmax, ymax)
         id = "ball_" + str(id)
-        self.ball = bf
+        bf = BallFrame(xmin, ymin, xmax, ymax, id)
+        self.ball_candidates.update({id: bf})
 
     def set_rim_box(self, id: int, xmin: int, ymin: int, xmax: int, ymax: int):
         "set rim box given bounding boxes"

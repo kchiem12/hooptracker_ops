@@ -3,7 +3,18 @@ Runner module for processing and statistics
 """
 import state
 from state import GameState
-from processing import parse, court, render, shot, team, video, trendline, action, possession
+from processing import (
+    parse,
+    clean,
+    court,
+    render,
+    shot,
+    team,
+    video,
+    trendline,
+    action,
+    possession,
+)
 from args import DARGS
 
 
@@ -21,14 +32,17 @@ class ProcessRunner:
     def run_parse(self):
         "Runs parse module over SORT (and pose later) outputs to update GameState"
         parse.parse_sort_output(self.state, self.args["people_file"])
+        parse.parse_sort_output(self.state, self.args["ball_file"])
+        parse.parse_pose_output(self.state, self.args["pose_file"])
+
+    def run_cleaning(self):
+        "runs clearning module"
         self.state.recompute_frame_count()
         if not self.args["skip_player_filter"]:
             # in case of short video
             threshold = min(300, len(self.state.frames) / 3)
             self.state.filter_players(threshold=threshold)
-
-        parse.parse_sort_output(self.state, self.args["ball_file"])
-        parse.parse_pose_output(self.state, self.args["pose_file"])
+        clean.Clean(self.state).run(self.args["ball_window"])
 
     def run_possession(self):
         """self.state.recompute_possesssions()
@@ -37,7 +51,8 @@ class ProcessRunner:
             join_threshold=self.args["join_threshold"],
         )"""
         possession_computer = possession.PossessionComputer(
-            self.state.frames, self.state.players)  # Assuming frames is a list of frame objects
+            self.state.frames, self.state.players
+        )  # Assuming frames is a list of frame objects
         self.state.possessions = possession_computer.compute_possessions()
         self.state.recompute_pass_from_possession()
 
@@ -63,8 +78,7 @@ class ProcessRunner:
             return
         videoRender = render.VideoRender(homography)
         videoRender.render_video(self.state, self.args["minimap_file"])
-        videoRender.reencode(
-            self.args["minimap_file"], self.args["minimap_temp_file"])
+        videoRender.reencode(self.args["minimap_file"], self.args["minimap_temp_file"])
 
     def run_video_processor(self):
         video_creator = video.VideoCreator(
@@ -83,6 +97,8 @@ class ProcessRunner:
         """
         self.run_parse()
         print("parsing complete!")
+        self.run_cleaning()
+        print("cleaning complete!")
         self.run_trendline()
         print("trendline processing complete!")
         self.run_possession()

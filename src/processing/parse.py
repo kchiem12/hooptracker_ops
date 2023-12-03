@@ -5,6 +5,7 @@ models outputs into the state
 from state import GameState, Frame, ObjectType, Box
 from pose_estimation.pose_estimate import AngleNames, KeyPointNames
 
+
 def parse_sort_output(state: GameState, sort_output) -> None:
     """
     Reads the SORT output and updates state.states frame-by-frame.
@@ -23,24 +24,21 @@ def parse_sort_output(state: GameState, sort_output) -> None:
 
     sts = state.frames
     b = 0  # index of line in ball
-    s = 0  # index of state
+    s = 0  # index AND FRAME of state
     while b < len(lines):
         frame, obj_type, id, xmin, ymin, xwidth, ywidth = lines[b][:7]
         if s >= len(sts):  # s-1 frameno < bframe, s = len(states)
-            sts.append(Frame(frame))
-        elif frame < sts[s].frameno:  # s-1 frameno < bframe < s frameno
-            sts.insert(s, Frame(frame))
-        elif frame > sts[s].frameno:
-            if sts[s].rim is None and s > 0:
-                sts[s].rim = sts[s - 1].rim  # ensure rim set
+            sts.append(Frame(s))  # append at index s
+            sts[s].rim = sts[s - 1].rim  # ensure rim set
+        if frame > s:
             s += 1
             continue
 
         sF: Frame = sts[s]
-        assert sF.frameno == frame
+        assert s == frame
         box = (xmin, ymin, xmin + xwidth, ymin + ywidth)
         if obj_type is ObjectType.BALL.value:
-            sF.set_ball_frame(id, *box)
+            sF.add_ball_frame(id, *box)
         elif obj_type is ObjectType.PLAYER.value:
             sF.add_player_frame(id, *box)
         elif obj_type is ObjectType.RIM.value:
@@ -67,8 +65,8 @@ def parse_pose_output(state: GameState, pose_output: str) -> None:
     lines = [[int(x) for x in line.split()] for line in file.readlines()]
     file.close()
 
-    kpn = len(KeyPointNames.list) # number of keypoints
-    an = len(AngleNames.list) # number of angles
+    kpn = len(KeyPointNames.list)  # number of keypoints
+    an = len(AngleNames.list)  # number of angles
 
     sts = state.frames
     p = 0  # index of pose_data
@@ -91,7 +89,7 @@ def parse_pose_output(state: GameState, pose_output: str) -> None:
         likely_id = [None, -1]
         for id, pf in state_frame.players.items():
             pbox = pf.box
-            
+
             # Calculate the area of intersection between the person's box and the player's box.
             intersection_area = bbox.area_of_intersection(pbox)
             # If the intersection area is greater than the current maximum, update the most likely player ID and area.
@@ -101,10 +99,10 @@ def parse_pose_output(state: GameState, pose_output: str) -> None:
             # If a likely player is found, set the keypoints for that player. Otherwise, print a message.
             if likely_id[0] is not None:
                 state_frame.players[likely_id[0]].set_keypoints(
-                    lines[p][7:7+2*kpn]
+                    lines[p][7 : 7 + 2 * kpn]
                 )
                 state_frame.players[likely_id[0]].set_angles(
-                    lines[p][7+2*kpn:7+2*kpn+an]
+                    lines[p][7 + 2 * kpn : 7 + 2 * kpn + an]
                 )
             else:
                 print("No likely player found for this person")

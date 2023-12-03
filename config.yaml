@@ -32,10 +32,11 @@ skip_process: false # if true, skips processing
 skip_court: false # if true, skips court detection
 skip_player_filter: false # if true, allows all tracked ids to be accounted
 
-# Processing parameters
+# Data cleaning parameters
 filter_threshold: 10 # min frames for player to be considered in possession
 join_threshold: 20 # max frames for same player to still be in possession
 shot_window: 10 # window of frames to look at ball intersecting top box and rim box
+ball_window: 30 # symmetric windows of frames to consider ball
 
 # Pose action parameters
 shot_threshold: 0.8 # threshold for shot action
