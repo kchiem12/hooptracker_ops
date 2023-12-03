@@ -8,6 +8,7 @@ import pandas as pd
 import requests
 import zipfile
 import shutil
+import json
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from main import main
@@ -128,7 +129,7 @@ def download_results(upload_name):
 
         processed_video_path = os.path.join(unzip_dir, f"court_video_reenc-{upload_name}.mp4")
         result_string_path = os.path.join(unzip_dir, f"results-{upload_name}.txt")
-
+        st.session_state.result_string_path = result_string_path
         with open(result_string_path, "r") as file:
             st.session_state.result_string = file.read()
         print(st.session_state.result_string)
@@ -207,29 +208,60 @@ def results_page():
     
     st.markdown("## Statistics")
 
+    # Function to parse the relevant part of the file
+    def parse_stats(file_path):
+        with open(file_path, "r") as file:
+            lines = file.readlines()
+            # Assuming the relevant data is in the last line
+            relevant_data = lines[-1]
+            data = json.loads(relevant_data)
+        return data
+    # Function to display player data
+    def display_player_data(player_data):
+        st.markdown("## Player Statistics")
+        for player, stats in player_data.items():
+            st.markdown(f"### {player}")
+            st.json(stats)
+    # Function to display team data
+    def display_team_data(team_data):
+        st.markdown("## Team Statistics")
+        for team, stats in team_data.items():
+            st.markdown(f"### {team}")
+            st.json(stats)
+    # Path to your file
+    file_path = st.session_state.result_string_path
+    # Parse the stats
+    stats = parse_stats(file_path)
+    # Extract player and team data
+    players = stats.get("players", {})
+    teams = {key: value for key, value in stats.items() if key.startswith("team")}
+    # Display the data
+    display_player_data(players)
+    display_team_data(teams)
+
     try:
-        with open("tmp/results" +st.session_state.upload_name +".txt", "r") as file:
+        with open(st.session_state.result_string_path, "r") as file:
             results_data = file.readlines()
 
-        current_section = None
-        results_table = []
+            current_section = None
+            results_table = []
 
-        # Process each line in the file
-        for line in results_data:
-            line = line.strip()
-            if line.endswith(":"):  # Check if the line is a section header
-                if results_table:  # Display the previous section's table, if any
-                    st.markdown(f"### {current_section}")
-                    st.table(results_table)
-                    results_table = []  # Reset for the next section
-                current_section = line[:-1]  # Set the new section header
-            elif ": " in line:
-                results_table.append(line.split(": "))
+            # Process each line in the file
+            for line in results_data:
+                line = line.strip()
+                if line.endswith(":"):  # Check if the line is a section header
+                    if results_table:  # Display the previous section's table, if any
+                        st.markdown(f"### {current_section}")
+                        st.table(results_table)
+                        results_table = []  # Reset for the next section
+                    current_section = line[:-1]  # Set the new section header
+                elif ": " in line:
+                    results_table.append(line.split(": "))
 
-        # Display the last section's table
-        if results_table:
-            st.markdown(f"### {current_section}")
-            st.table(results_table)
+            # Display the last section's table
+            if results_table:
+                st.markdown(f"### {current_section}")
+                st.table(results_table)
 
     except FileNotFoundError:
         st.error("Results file not found.")

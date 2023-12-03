@@ -65,7 +65,7 @@ async def process_file(file_name: str):
         new_path = "data/" + file_name + ".mp4"
 
         s3.download_file("hooptracker-uploads", file_name + ".mp4", new_path)
-        command = ["python", "src/main.py", "--source", new_path]
+        command = ["python", "src/main.py", "--video_file", new_path]
         subprocess.run(command)
         results_path = "results-" + file_name + ".txt"
         court_reenc_path = "court_video_reenc-" + file_name + ".mp4"
