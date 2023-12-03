@@ -131,6 +131,7 @@ def download_results(upload_name):
 
         with open(result_string_path, "r") as file:
             st.session_state.result_string = file.read()
+        print(st.session_state.result_string)
         st.session_state.processed_video = processed_video_path
 
         # clean up temporary directory

@@ -27,18 +27,11 @@ def results(game_state: GameState) -> str:
         results_str += f"  Field Goals Attempted: {player_state.field_goals_attempted}\n"
         results_str += f"  Field Goals Made: {player_state.field_goals}\n"
         results_str += f"  Points Scored: {player_state.points}\n"
-        results_str += f"  Field Goal Percentage: {player_state.field_goal_percentage:.2f}\n"
-        results_str += f"  Passes Made: {sum(player_state.passes.values())}\n"
 
     # Format team statistics
     results_str += "\nTeam Stats:\n"
     for team_id, team in [('Team 1', game_state.team1), ('Team 2', game_state.team2)]:
         results_str += f"{team_id}:\n"
-        results_str += f"  Shots Attempted: {team.shots_attempted}\n"
-        results_str += f"  Shots Made: {team.shots_made}\n"
-        results_str += f"  Points: {team.points}\n"
-        results_str += f"  Field Goal Percentage: {team.field_goal_percentage:.2f}\n"
-
     # Format ball statistics
     results_str += "\nBall Stats:\n"
     results_str += f"Ball Frames: {game_state.ball.frames}\n"
