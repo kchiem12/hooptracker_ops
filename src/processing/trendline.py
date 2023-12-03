@@ -1,5 +1,6 @@
 from state import GameState, BallFrame, Box
 
+
 class LinearTrendline:
     def __init__(self, state: GameState, args):
         self.args = args
@@ -70,7 +71,12 @@ class LinearTrendline:
 
                     # Create a new BallFrame with estimated position
                     predicted_box = self.create_predicted_box(x_pred, y_pred)
-                    current_frame.ball = BallFrame(predicted_box.xmin, predicted_box.ymin, predicted_box.xmax, predicted_box.ymax)
+                    current_frame.ball = BallFrame(
+                        predicted_box.xmin,
+                        predicted_box.ymin,
+                        predicted_box.xmax,
+                        predicted_box.ymax,
+                    )
 
     def create_predicted_box(self, x_center, y_center, ball_size=20):
         # Assuming a fixed size for the ball for simplicity
@@ -114,7 +120,9 @@ class LinearTrendline:
     #             if abs(frame.ball.ax) > dynamic_threshold or abs(frame.ball.ay) > dynamic_threshold:
     #                 frame.ball = None
 
-    def is_spatial_change_abrupt(self, current_frame, spatial_threshold=70, window_size=15):
+    def is_spatial_change_abrupt(
+        self, current_frame, spatial_threshold=70, window_size=15
+    ):
         if current_frame.ball:
             x2, y2 = current_frame.ball.box.center()
 
@@ -126,7 +134,7 @@ class LinearTrendline:
 
                     distance = ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5
                     if distance > spatial_threshold:
-                        print(f"Frame {current_frame.frameno}: Abrupt spatial change detected. Distance: {distance:.2f}")
+                        # print(f"Frame {current_frame.frameno}: Abrupt spatial change detected. Distance: {distance:.2f}")
                         return True
                     break
 
