@@ -7,8 +7,8 @@ import hydralit_components as hc
 import pandas as pd
 import requests
 import zipfile
-import shutil
 import json
+import shutil
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from main import main
@@ -129,7 +129,7 @@ def download_results(upload_name):
 
         processed_video_path = os.path.join(unzip_dir, f"court_video_reenc-{upload_name}.mp4")
         result_string_path = os.path.join(unzip_dir, f"results-{upload_name}.txt")
-        st.session_state.result_string_path = result_string_path
+        st.session_state.result_string_path=result_string_path
         with open(result_string_path, "r") as file:
             st.session_state.result_string = file.read()
         print(st.session_state.result_string)
@@ -208,63 +208,65 @@ def results_page():
     
     st.markdown("## Statistics")
 
-    # Function to parse the relevant part of the file
-    def parse_stats(file_path):
-        with open(file_path, "r") as file:
-            lines = file.readlines()
-            # Assuming the relevant data is in the last line
-            relevant_data = lines[-1]
-            data = json.loads(relevant_data)
+    # Adjusting the function to start parsing from the specific marker and display a sample output
+    def parse_file_for_correct_section(file_path, start_marker):
+        data = ""
+        recording = False
+        with open(file_path, 'r') as file:
+            for line in file:
+                # Start recording when the start marker is found
+                if start_marker in line:
+                    recording = True
+                    data += line[line.find(start_marker):]  # Append from the start marker
+                    continue
+                # Continue recording after the start marker is found
+                if recording:
+                    data += line
+                    # Stop recording at the first closing brace '}' after recording starts
+                    if '}' in line and not '{' in line:
+                        break
         return data
-    # Function to display player data
-    def display_player_data(player_data):
-        st.markdown("## Player Statistics")
-        for player, stats in player_data.items():
-            st.markdown(f"### {player}")
-            st.json(stats)
-    # Function to display team data
-    def display_team_data(team_data):
-        st.markdown("## Team Statistics")
-        for team, stats in team_data.items():
-            st.markdown(f"### {team}")
-            st.json(stats)
-    # Path to your file
-    file_path = st.session_state.result_string_path
-    # Parse the stats
-    stats = parse_stats(file_path)
-    # Extract player and team data
-    players = stats.get("players", {})
-    teams = {key: value for key, value in stats.items() if key.startswith("team")}
-    # Display the data
-    display_player_data(players)
-    display_team_data(teams)
 
-    try:
-        with open(st.session_state.result_string_path, "r") as file:
-            results_data = file.readlines()
+# Define the specific start marker
+    start_marker = "'players': {'player_1': {'frames':"
 
-            current_section = None
-            results_table = []
+# Parse the file for the specific section starting at the defined marker
+    parsed_correct_section = parse_file_for_correct_section(st.session_state.result_string_path, start_marker)
 
-            # Process each line in the file
-            for line in results_data:
-                line = line.strip()
-                if line.endswith(":"):  # Check if the line is a section header
-                    if results_table:  # Display the previous section's table, if any
-                        st.markdown(f"### {current_section}")
-                        st.table(results_table)
-                        results_table = []  # Reset for the next section
-                    current_section = line[:-1]  # Set the new section header
-                elif ": " in line:
-                    results_table.append(line.split(": "))
+    def extract_player_team_stats(data_str):
+        # Initialize variables to hold formatted data as strings
+        formatted_players = ""
+        formatted_teams = ""
 
-            # Display the last section's table
-            if results_table:
-                st.markdown(f"### {current_section}")
-                st.table(results_table)
+        # Splitting the string into lines
+        lines = data_str.split(',')
 
-    except FileNotFoundError:
-        st.error("Results file not found.")
+        # Process each line
+        for line in lines:
+            # Check and format player data
+            if any(key in line for key in ['frames', 'field_goals_attempted', 'field_goals', 'points', 'field_goal_percentage']):
+                formatted_players += line.strip() + "\n"
+
+            # Check and format team data
+            elif any(key in line for key in ['shots_attempted', 'shots_made', 'points', 'field_goal_percentage']):
+                formatted_teams += line.strip() + "\n"
+
+        return formatted_players, formatted_teams
+
+    # Sample usage with the parsed_correct_section string
+    formatted_players, formatted_teams = extract_player_team_stats(parsed_correct_section)
+
+    def display_stats():
+        # Display player statistics
+        st.markdown("### Player Statistics")
+        st.text(formatted_players)
+
+        # Display team statistics
+        st.markdown("### Team Statistics")
+        st.text(formatted_teams)
+
+# Call the function in your Streamlit app
+    display_stats()
     st.markdown("## Processed Video")
     try:
         st.video(st.session_state.processed_video)
@@ -274,7 +276,7 @@ def results_page():
         label="Download Results",
         use_container_width=True,
         data=st.session_state.result_string,
-        file_name="results" +st.session_state.upload_name +".txt",
+        file_name=st.session_state.result_string_path,
     )
   
 
