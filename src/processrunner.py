@@ -37,10 +37,9 @@ class ProcessRunner:
             join_threshold=self.args["join_threshold"],
         )"""
         possession_computer = possession.PossessionComputer(
-            self.state.frames)  # Assuming frames is a list of frame objects
+            self.state.frames, self.state.players)  # Assuming frames is a list of frame objects
         self.state.possessions = possession_computer.compute_possessions()
         self.state.recompute_pass_from_possession()
-        # self.state.passes = {}
 
     def run_team_detect(self):
         team.split_team(self.state)

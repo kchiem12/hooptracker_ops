@@ -125,8 +125,19 @@ def results_page():
         # Results
         These are the results. Here's the processed video and a minimap of the player positions.
         """
+       
     )
     # st.video(open(st.session_state.processed_video, "rb").read())
+ #here we need to add the call for the videos
+
+
+    response = requests.get(SERVER_URL + "video")
+    if response.status_code == 200:
+        video_bytes = response.content()  # Returns the formatted results as JSON
+        video_bytes = response
+        st.video(video_bytes)
+    else:
+        st.header ("error- Failed to retrieve data from the backend.")
 
     
     st.markdown("## Statistics")
