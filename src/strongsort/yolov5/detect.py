@@ -583,9 +583,12 @@ def run(
                 )
             ] = [frame_idx, path, im, im0s, vid_cap, s]
 
+        dt, seen = [0.0, 0.0, 0.0, 0.0], 0
         for future in concurrent.futures.as_completed(all):
             [frame_idx, path, im, im0s, vid_cap, s] = all[future]
-            dt, seen, save_path = future.result()
+            per_frame_dt, per_frame_seen, save_path = future.result()
+            dt += per_frame_dt
+            seen += per_frame_seen
 
     # Print results
     t = tuple(x / seen * 1e3 for x in dt)  # speeds per image
