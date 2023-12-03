@@ -5,19 +5,19 @@ class Clean:
     def __init__(self, state: GameState):
         self.state = state
 
-    def run(self, window:int):
+    def run(self, window: int):
         self.clean_ball(window)
 
-    def incr(self, d: dict[str, int], fr: Frame, incr=1):
+    def incr(self, d: dict, fr: Frame, incr=1):
         "increments frequency of seen ball in frame by 1"
         for b in fr.ball_candidates:
             d[b] = d.get(b, 0) + incr
 
-    def decr(self, d: dict[str, int], fr: Frame):
+    def decr(self, d: dict, fr: Frame):
         "decrements frequency of seen ball in frame by 1"
         self.incr(d, fr, incr=-1)
 
-    def clean_ball(self, window:int):
+    def clean_ball(self, window: int):
         "assigns ball with highest frame frequency over a window"
         freq: dict[str, int] = {}  # freq of id over winow
         frames = self.state.frames
