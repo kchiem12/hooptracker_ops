@@ -7,7 +7,6 @@ import hydralit_components as hc
 import pandas as pd
 import requests
 import zipfile
-import json
 import shutil
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -228,42 +227,58 @@ def results_page():
         return data
 
 # Define the specific start marker
-    start_marker = "'players': {'player_1': {'frames':"
+    start_marker = "{'player_1': {'frames':"
 
 # Parse the file for the specific section starting at the defined marker
     parsed_correct_section = parse_file_for_correct_section(st.session_state.result_string_path, start_marker)
 
     def extract_player_team_stats(data_str):
-        # Initialize variables to hold formatted data as strings
         formatted_players = ""
-        formatted_teams = ""
+        formatted_team1 = ""
+        formatted_team2 = ""
+        current_team = None
 
-        # Splitting the string into lines
         lines = data_str.split(',')
 
-        # Process each line
         for line in lines:
-            # Check and format player data
-            if any(key in line for key in ['frames', 'field_goals_attempted', 'field_goals', 'points', 'field_goal_percentage']):
+            
+            if "'team1'" in line:
+                current_team = 'team1'
+            elif "'team2'" in line:
+                current_team = 'team2'
+            if any(key in line for key in ['frames']):
+                line = line.replace("{", "").replace("}", "").replace("'", "")
+                formatted_players +="\n"+ line.strip() + "\n"
+            if any(key in line for key in ['field_goals_attempted', 'field_goals', 'points', 'field_goal_percentage']):
+                line = line.replace("{", "").replace("}", "").replace("'", "")
                 formatted_players += line.strip() + "\n"
 
-            # Check and format team data
+
             elif any(key in line for key in ['shots_attempted', 'shots_made', 'points', 'field_goal_percentage']):
-                formatted_teams += line.strip() + "\n"
+                line = line.replace("{", "").replace("}", "").replace("'", "").strip()
+                if current_team == 'team1':
+                    formatted_team1 += line + "\n"
+                elif current_team == 'team2':
+                    formatted_team2 += line + "\n"
+        if "ball:" in formatted_players:
+            formatted_players = formatted_players.split("ball:")[0]
 
-        return formatted_players, formatted_teams
+        return formatted_players, formatted_team1, formatted_team2
 
-    # Sample usage with the parsed_correct_section string
-    formatted_players, formatted_teams = extract_player_team_stats(parsed_correct_section)
+    formatted_players, formatted_team1, formatted_team2 = extract_player_team_stats(parsed_correct_section)
 
     def display_stats():
-        # Display player statistics
         st.markdown("### Player Statistics")
         st.text(formatted_players)
 
-        # Display team statistics
-        st.markdown("### Team Statistics")
-        st.text(formatted_teams)
+        st.markdown("### Team 1 Statistics")
+        st.text(formatted_team1)
+
+        st.markdown("### Team 2 Statistics")
+        st.text(formatted_team2)
+
+# Call the function in your Streamlit app
+
 
 # Call the function in your Streamlit app
     display_stats()
