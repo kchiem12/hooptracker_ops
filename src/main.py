@@ -1,94 +1,87 @@
 """
 Main control loop module
 """
-import yaml
 from modelrunner import ModelRunner
 from processrunner import ProcessRunner
 import argparse
+from args import DARGS, setup_args
 
 
-# before main is called:
-# frontend boots up, awaits user to upload a video
-# upload button triggers backend call to upload video to s3
-# fetch the video from cloud and download to tmp/uploaded_video.mp4
-# calls main
-
-
-# load in configs from config.yaml
-# initialise modelrunner and processrunner
-# feed video into the yolo model, pass into modelrunner
-# get output from modelrunner, feed into statrunner
-# returns outputs (original video + statistics) back to frontend TODO integrate
-# with a backend endpoint that also uploads results to aws
-def load_config(path):
-    """
-    TODO Loads the config yaml file to read in parameters and settings.
-    """
-    with open(path, "r") as file:
-        config = yaml.safe_load(file)
-    return config
-
-
-def main(source: str, results_out: str, results_folder=None) -> None:
+def main(args=DARGS) -> None:
     """
     Sequentially initialises and runs model running and processing tasks.
     Input:
-        video_path: relative path to video to process
-        results_out: relative path to write results
+        args: dict of arguments, as specified in config.yaml
     Side Effect:
-        Writes to results [results_out]
+        Writes to args['results_file']
     """
-    config = load_config("config.yaml")
-    model_vars = config["model_vars"]
-
-    modelrunner = ModelRunner(source, model_vars, out=results_folder)
-    if not results_folder:
-        modelrunner.run()
-    people_output, ball_output, pose_output = modelrunner.fetch_output()
-    output_video_path = "tmp/court_video.mp4"
-    output_video_path_reenc = "tmp/court_video_reenc.mp4"
-    processed_video_path = "tmp/processed_video.mp4"
-
-    processrunner = ProcessRunner(
-        source,
-        people_output,
-        ball_output,
-        pose_output,
-        output_video_path,
-        output_video_path_reenc,
-        processed_video_path,
+    print(
+        "==============Starting backend loop with following inputs!======================"
+    )
+    for key, value in args.items():
+        print(f"              {key}: {value}")
+    print(
+        "================================================================================"
     )
 
-    processrunner.run()
+    modelrunner = ModelRunner(args=args)
+    if not args["skip_model"]:
+        modelrunner.run()
+
+    processrunner = ProcessRunner(args=args)
+    if not args["skip_process"]:
+        processrunner.run()
+
     results = processrunner.get_results()
-    with open(results_out, "w") as file:
-        file.write(results)
+    with open(args["results_file"], "w") as f:
+        f.write(results)
+
+    print(
+        f"==============Backend complete! Results stored in {args['output']}======================"
+    )
+    if not args["skip_model"]:
+        print(f"              player/rim output stored in {args['people_file']}")
+        print(f"              ball output stored in {args['ball_file']}")
+        print(f"              pose output stored in {args['pose_file']}")
+    if not args["skip_process"]:
+        print(f"              processed video stored in {args['processed_file']}")
+        print(f"              results file stored in {args['results_file']}")
+        if not args["skip_court"]:
+            print(f"              minimap stored in {args['minimap_file']}")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Runs backend loop")
-    parser.add_argument("-s", "--source", help="runs backend on specified file ")
-    parser.add_argument("-o", "--out", help="specify where to save file")
+    parser.add_argument("--video_file", help="path to video file")
+    parser.add_argument("--output", help="path to output directory")
     parser.add_argument(
-        "-p",
-        "--process_only",
-        help="skips model running and runs from results stored tmp/save. specifiy processed results directory",
+        "--skip_model", action="store_true", help="skips model, runs from [output]"
     )
+    parser.add_argument("--skip_process", action="store_true", help="skips processing")
+    parser.add_argument(
+        "--skip_court", action="store_true", help="skips court and minimap processing"
+    )
+    parser.add_argument(
+        "--skip_video", action="store_true", help="skips court and minimap processing"
+    )
+    parser.add_argument(
+        "--skip_player_filter", action="store_true", help="skips player filters"
+    )
+    parser.add_argument(
+        "--verbose", action="store_true", help="prints model output to console"
+    )
+    parser.add_argument("--basename", help="name of output file")
+    parser.add_argument(
+        "--player_weights", help="path to player/rim weights for yolov5"
+    )
+    parser.add_argument("--ball_weights", help="path to ball weights for yolov5")
+    parser.add_argument("--pose_weights", help="path to pose weights for yolov8-pose")
+
     args = parser.parse_args()
-    s = "data/training_data.mp4"
-    p = None
-    o = "tmp/results.txt"
-
-    if args.source:
-        if args.process_only:
-            p = args.process_only
-        s = args.source
-    else:
-        print("============Running default script for backend...==============")
-    if args.out:
-        o = args.out
-    print(
-        f"============Running backend on {s}, results saved to {o}, results folder: {p}...=============="
-    )
-
-    main(source=s, results_out=o, results_folder=p)
+    args = vars(args)
+    dargs0 = DARGS.copy()
+    for k in args:
+        if args.get(k) is not None:
+            dargs0[k] = args[k]
+    setup_args(dargs0)
+    main(dargs0)

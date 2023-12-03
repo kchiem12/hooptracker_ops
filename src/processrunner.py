@@ -3,9 +3,8 @@ Runner module for processing and statistics
 """
 import state
 from state import GameState
-from processing import parse, court, render, shot, team, video, trendline, action, format
+from processing import parse, court, render, shot, team, video, trendline, action, possession
 from args import DARGS
-
 
 
 class ProcessRunner:
@@ -24,7 +23,8 @@ class ProcessRunner:
         parse.parse_sort_output(self.state, self.args["people_file"])
         self.state.recompute_frame_count()
         if not self.args["skip_player_filter"]:
-            threshold = min(300, len(self.state.frames) / 3)  # in case of short video
+            # in case of short video
+            threshold = min(300, len(self.state.frames) / 3)
             self.state.filter_players(threshold=threshold)
 
         parse.parse_sort_output(self.state, self.args["ball_file"])
@@ -36,8 +36,9 @@ class ProcessRunner:
             threshold=self.args["filter_threshold"],
             join_threshold=self.args["join_threshold"],
         )"""
-        self.state.recompute_possessions_v1()
-        self.state.compute_possession_intervals()
+        possession_computer = possession.PossessionComputer(
+            self.state.frames, self.state.players)  # Assuming frames is a list of frame objects
+        self.state.possessions = possession_computer.compute_possessions()
         self.state.recompute_pass_from_possession()
 
     def run_team_detect(self):
@@ -56,21 +57,18 @@ class ProcessRunner:
         homography = c.get_homography()
         self.run_video_render(homography)
 
-    def get_res(self):
-        formatted_results = format.results(self.state)
-        with open("results.txt", "w") as file:
-            file.write(formatted_results)
-        return formatted_results
-
     def run_video_render(self, homography):
         """Runs video rendering and reencodes, stores to output_video_path_reenc."""
         if self.args["skip_court"]:
             return
         videoRender = render.VideoRender(homography)
         videoRender.render_video(self.state, self.args["minimap_file"])
-        videoRender.reencode(self.args["minimap_file"], self.args["minimap_temp_file"])
+        videoRender.reencode(
+            self.args["minimap_file"], self.args["minimap_temp_file"])
 
     def run_video_processor(self):
+        if self.args["skip_video"]:
+            return
         video_creator = video.VideoCreator(
             self.state, self.args["video_file"], self.args["processed_file"]
         )
@@ -98,10 +96,6 @@ class ProcessRunner:
 
         self.run_courtline_detect()
         print("court detection and render complete!")
-        
-        self.get_res()
-        print("format complete!")
-
         self.run_video_processor()
         print("stats video render complete!")
 

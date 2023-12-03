@@ -12,6 +12,13 @@ import subprocess
 from dotenv import load_dotenv
 import shutil
 
+import sys
+import os
+
+from ..format import Format
+
+
+
 # Amazon S3 Connection
 # load_dotenv()
 # access_key = os.getenv("AWS_ACCESS_KEY_ID")
@@ -105,17 +112,22 @@ async def download_file(file_name: str):
         return {"error": str(ex)}
 
 
-# TODO Not being used RN
+
 @app.get("/results")
-async def get_results():
-    """
-    Fetch the results csv from statistics
-    """
-    dummy_df = pd.read_csv("dummy.csv")  # replace with stat logic
-    stream = io.StringIO()
-    dummy_df.to_csv(stream, index=False)
-    response = StreamingResponse(
-        io.StringIO(dummy_df.to_csv(index=False)), media_type="text/csv"
-    )
-    response.headers["Content-Disposition"] = "attachment; filename=export.csv"
-    return response
+async def get_formatted_results():
+    try:
+        # Assuming the Format.results() method returns the formatted data as JSON
+        formatted_data = Format.results()
+        return formatted_data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+
+@app.get("/video")
+async def get_videos():
+    file_path = 'tmp/minimap.mp4'
+    def iterfile():  
+        with open(file_path, mode="rb") as file_like:  
+            yield from file_like 
+
+    return StreamingResponse(iterfile(), media_type="video/mp4")

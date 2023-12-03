@@ -71,7 +71,6 @@ class Render:
         "Final processed image of court edges"
         self._TRUTH_COURT_MAP = cv.imread(self._TRUE_PATH, cv.IMREAD_GRAYSCALE)
         "True court map of half court"
-        print(1)
         self._HSV_BINNING = True  # choose either HSV binning or YCrCb binning
         if self._HSV_BINNING:
             self._index = (0, 1)
@@ -83,15 +82,12 @@ class Render:
             self._one_max = 256.0
             self._two_max = 256.0
             self._COURT_IMG = self._YCRCB_COURT
-        print(2)
         self._HOMOGRAPHY = None
         "Homography matrix to transform court to minimaped version"
 
         if display_images:
-            print(3)
             self._HOMOGRAPHY = self._detect_courtlines_and_display()
         else:
-            print(33)
             self._HOMOGRAPHY = self._detect_courtlines()
 
     def get_homography(self):
@@ -357,14 +353,14 @@ class Render:
         @param pts_src, four points on true image of court to map toz
         @return goodness, proportion of intersection.
         """
-        assert pts_src is not None
-        mapped_edge_img = self._apply_gray_homography(
-            self._MASK_COURT_EDGES, pts_src, pts_dst=pts_dst
-        )
-        total_max_overlap = self._max_pixel_overlap(
-            self._MASK_COURT_EDGES, pts_src, pts_dst=pts_dst
-        )
-        goodness = float(np.count_nonzero(mapped_edge_img > 100)) / total_max_overlap
+        assert(pts_src is not None)
+        mapped_edge_img = self._apply_gray_homography(self._MASK_COURT_EDGES,pts_src,pts_dst=pts_dst)
+        total_max_overlap = self._max_pixel_overlap(self._MASK_COURT_EDGES,pts_src,pts_dst=pts_dst)
+        if total_max_overlap != 0:
+            goodness = float(np.count_nonzero(mapped_edge_img > 100)) / total_max_overlap
+        else:
+            goodness = 0
+
         return goodness
 
     def _get_four_intersections(

@@ -2,9 +2,53 @@
 Module containing state of game statistics
 """
 from enum import Enum
-from pose_estimation.pose_estimate import KeyPointNames
+from pose_estimation.pose_estimate import KeyPointNames, AngleNames
 import sys
 import math
+from collections import deque, defaultdict
+
+
+def format_results_for_api(self):
+    # General statistics
+    general_stats = {
+        "Number of frames": len(self.frames),
+        "Duration": self.calculate_game_duration(),
+        "Highest scoring player": self.identify_highest_scoring_player(),
+    }
+
+    # Player statistics
+    player_stats = {
+        player_id: {
+            "Points": player_state.points,
+            # To be implemented
+            "Rebounds": self.calculate_rebounds(player_id),
+            "Assists": sum(player_state.passes.values()),
+        }
+        for player_id, player_state in self.players.items()
+    }
+
+    # Team statistics
+    team_stats = {
+        "Team 1": {
+            "Score": self.team1.points,
+            # To be implemented
+            "Possession": self.calculate_possession_time("Team 1"),
+        },
+        "Team 2": {
+            "Score": self.team2.points,
+            # To be implemented
+            "Possession": self.calculate_possession_time("Team 2"),
+        },
+    }
+
+    # Combine all statistics into a single dictionary
+    formatted_results = {
+        "general_stats": general_stats,
+        "player_stats": player_stats,
+        "team_stats": team_stats,
+    }
+
+    return formatted_results
 
 
 # maintains dictionary functionality, if desired:
@@ -35,9 +79,12 @@ class Box:
     """
     Bounding box containing
         xmin, ymin, xmax, ymax of bounding box
+        predicted: indicates if the box was predicted (default False)
     """
 
-    def __init__(self, xmin: int, ymin: int, xmax: int, ymax: int) -> None:
+    def __init__(
+        self, xmin: int, ymin: int, xmax: int, ymax: int, predicted=False
+    ) -> None:
         """
         Initializes bounding box
         """
@@ -46,6 +93,16 @@ class Box:
         self.ymin: int = ymin
         self.xmax: int = xmax
         self.ymax: int = ymax
+        self.predicted: bool = predicted
+
+    def center(self):
+        return ((self.xmin + self.xmax) / 2, (self.ymin + self.ymax) / 2)
+
+    def distance_between_boxes(box1, box2) -> float:
+        # Calculate Euclidean distance between the centers of two boxes
+        x1, y1 = box1.center()
+        x2, y2 = box2.center()
+        return (abs(x2 - x1) ** 2 + abs(y2 - y1) ** 2) ** 0.5
 
     def area(self) -> int:
         "area of bounding box"
@@ -165,29 +222,31 @@ class BallFrame:
     """
     Ball state containing
         box: bounding box
-        playerid: of last posession
-        type: IN_POCESSION, IN_TRANSITION, or OUT_OF_PLAY
+        playerid: of last possession
+        type: IN_POSSESSION, IN_TRANSITION, or OUT_OF_PLAY
+        vx: velocity in the x-direction
+        vy: velocity in the y-direction
     """
 
     def __init__(self, xmin: int, ymin: int, xmax: int, ymax: int) -> None:
         # IMMUTABLE
-        self.box: Box = Box(xmin, ymin, xmax, ymax)
-        "bounding box"
+        self.box: Box = Box(xmin, ymin, xmax, ymax)  # Bounding box
 
         # MUTABLE
-        self.playerid: int = None
-        "last player in possession"
-        self.type: BallType = None
-        "IN_POCESSION, IN_TRANSITION, or OUT_OF_PLAY"
+        self.playerid: int = None  # Last player in possession
+        self.type: BallType = None  # IN_POSSESSION, IN_TRANSITION, or OUT_OF_PLAY
+        self.vx: float = None
+        self.vy: float = None
 
     def check(self) -> bool:
-        "verifies if well-defined"
+        "Verifies if well-defined"
         try:
-            assert self.box.check() == True
+            assert self.box.check()
             assert self.playerid is not None and self.type is not None
-        except:
+            # Note: vx and vy are allowed to be None, so no check is needed for them
+            return True
+        except AssertionError:
             return False
-        return True
 
 
 class ActionType(Enum):
@@ -218,24 +277,37 @@ class PlayerFrame:
         "NOTHING, DRIBBLE, PASS, SHOOT"
         self.keypoints: dict[str, Keypoint] = {}
         "keypoints of the player"
+        self.angles: dict[str, int] = {}
+        "angles of the player in degrees"
 
-    def set_keypoints(self, keypoints: list, confidences: list) -> None:
+    def set_keypoints(self, keypoints: list) -> None:
         "Sets the keypoints for the player"
         try:
-            assert len(keypoints) == len(confidences)
-            assert len(keypoints) == len(KeyPointNames.list)
+            assert len(keypoints) == len(KeyPointNames.list) * 2
         except Exception as e:
             print(len(keypoints))
-            print(len(confidences))
-            print(len(KeyPointNames.list))
+            print(len(KeyPointNames.list) * 2)
             print("Could not load keypoints, list length error")
             return
 
-        for i in range(len(keypoints)):
-            x, y = keypoints[i]
-            confidence = confidences[i]
+        for i in range(len(KeyPointNames.list)):
+            x, y = keypoints[2 * i: 2 * i + 2]
+            confidence = 1  # can put into confidence later
             key = KeyPointNames.list[i]
             self.keypoints[key] = Keypoint(x, y, confidence)
+
+    def set_angles(self, angles: list) -> None:
+        "Sets the angles for the player"
+        try:
+            assert len(angles) == len(AngleNames.list)
+        except Exception as e:
+            print("Could not load angles, list length error")
+            return
+
+        for i in range(len(angles)):
+            angle = angles[i]
+            key = AngleNames.list[i]
+            self.angles[key] = angle
 
     def check(self) -> bool:
         "verifies if well-defined"
@@ -285,6 +357,27 @@ class Keypoint:
         return True
 
 
+class Angle:
+    """
+    Angle class containing the angle of the player limbs
+    """
+
+    def __init__(self, angle: float) -> None:
+        self.angle: int = math.trunc(angle)
+        "angle of the keypoint"
+
+    def __repr__(self) -> str:
+        return f"Angle(angle={self.angle})"
+
+    def check(self) -> bool:
+        "verifies if well-defined"
+        try:
+            assert self.angle >= 0
+        except AssertionError:
+            return False
+        return True
+
+
 class Frame:
     "Frame class containing frame-by-frame information"
 
@@ -302,7 +395,8 @@ class Frame:
         "frame number, Required: non-negative integer"
 
         # MUTABLE
-        self.players: dict[str, PlayerFrame] = {}  # ASSUMPTION: MULITPLE PEOPLE
+        # ASSUMPTION: MULITPLE PEOPLE
+        self.players: dict[str, PlayerFrame] = {}
         "dictionary of form {player_[id] : PlayerFrame}"
         self.ball: BallFrame = None  # ASSUMPTION: SINGLE BALLS
         "dictionary of form {ball_[id] : BallFrame}"
@@ -381,6 +475,8 @@ class PlayerState:
         self.points: int = 0
         self.field_goal_percentage: float = 0.0
         self.passes: dict[int] = {}
+        self.assists: int = 0
+        self.rebounds: int = 0
 
 
 class TeamStats:
@@ -489,26 +585,34 @@ class GameState:
         self.team1: TeamStats = TeamStats()
         self.team2: TeamStats = TeamStats()
 
-    def populate_team_stats(self):
-        """
-        Populates the scores and shots made/attempted for each team
-        """
+    def populate_shot_stats(self):
+        """Computes team scores, player assists, and player rebounds"""
         for shot in self.shot_attempts:
-            if shot.made:
-                if shot.playerid in self.team1.players:
-                    self.team1.shots_made += 1
-                    self.team1.points += shot.value()
-                else:
-                    self.team2.shots_made += 1
-                    self.team2.points += shot.value()
+            player = shot.playerid
+            team = self.team1 if player in self.team1.players else self.team2
+            idx_after = -1
+            for inte in self.possessions:
+                if inte.start >= shot.end:
+                    idx_after = self.possessions.index(inte)
+                    break
 
-            if shot.playerid in self.team1.players:
-                self.team1.shots_attempted += 1
+            team.shots_attempted += 1
+            if shot.made:
+                team.shots_made += 1
+                team.points += shot.value()
+                # assists
+                if idx_after >= 2:
+                    player_prior = self.possessions[idx_after - 2].playerid
+                    if player_prior in team.players:
+                        self.players[player_prior].assists += 1
             else:
-                self.team2.shots_attempted += 1
+                # rebound
+                rebound_player = self.possessions[idx_after].playerid
+                self.players[rebound_player].rebounds += 1
 
         self.team1.compute_field_goal_percentage()
         self.team2.compute_field_goal_percentage()
+
 
     def populate_players_stats(self):
         """
@@ -535,101 +639,19 @@ class GameState:
             for c in self.passes[p]:
                 self.players[p].passes.update({c: self.passes[p][c]})
 
-    
-    def recompute_possesssions(self):
-        "naively compute frame-by-frame possession of ball"
-        for frame in self.frames:
-            if frame.ball is None:
-                frame.possessions = []
-                continue
-            lst: list[(str, int)] = []
-            ball: Box = frame.ball.box
-            for id, p in frame.players.items():
-                a: int = p.box.area_of_intersection(ball)
-                if a == 0:
-                    continue
-                lst.append((id, a))
-
-            sorted_lst: list[(str, int)] = sorted(
-                lst, key=lambda x: x[1]
-            )  # sorted from least to greatest intersect
-            frame.possessions = [x for (x, _) in sorted_lst]
-
-    def recompute_possession_list(self, threshold=20, join_threshold=20):
-        """
-        Recompute posssession list with frame possession minimum [threshold].
-        Requires at least one frame
-        """
-        lst = []
-        prev = None
-        while lst != prev:  # until lists have converged
-            prev = lst.copy()
-            self.grow_poss(lst)
-            self.join_poss(lst, threshold)
-            self.filter_poss(lst, join_threshold)
-        self.possessions = lst
-
-    def grow_poss(self, lst: list) -> None:
-        """
-        modifies possession list [lst] with more possession, if available
-
-        """
-        i = 0
-        fi = 0
-        while fi < len(self.frames):
-            f: Frame = self.frames[fi]
-            frame = f.frameno
-            poss = f.possessions
-
-            if i >= len(lst):
-                s = sys.maxsize  # ensures new poss frame added
-            else:
-                pi: Interval = lst[i]  # assume well-defined
-                s = pi.start
-
-            if len(poss) == 0 or s <= frame:  # skip when nothing
-                fi += 1  # next frame
-                continue
-            else:  # frame < start
-                p = poss.pop()  # pop last player, most likely intersect
-                lst.insert(i, Interval(p, frame, frame))
-                i += 1  # next interval
-
-    def join_poss(self, lst: list, threshold: int = 20):  # possiblility of mapreduce
-        "modifies posssession list to join same player intervals within threshold frames"
-        i = 0
-        while i < len(lst) - 1:
-            p1: Interval = lst[i]
-            p2: Interval = lst[i + 1]
-
-            if p1.playerid == p2.playerid and p2.start - p1.end <= threshold:
-                lst.pop(i)
-                lst.pop(i)
-                p = Interval(p1.playerid, p1.start, p2.end)
-                lst.insert(i, p)
-            else:
-                i += 1  # next interval pair
-
-    def filter_poss(self, lst: list, threshold: int = 20):
-        "modifies posssession list to join same player intervals within threshold frames"
-        i = 0
-        while i < len(lst):
-            p: Interval = lst[i]
-            if p.length < threshold or p.playerid not in self.players:
-                lst.pop(i)
-            else:
-                i += 1  # next interval
-
     def recompute_frame_count(self):
-        "recompute frame count of all players in frames"
-        for ps in self.players.values():  # reset to 0
+        """
+        Recompute the frame count for each player ID in the video frames.
+        This count represents the total number of frames each player ID appears in the video
+        and can be used to adjust for noise in reassigned player IDs.
+        """
+        for ps in self.players.values():  # Reset frame count to 0 for all players
             ps.frames = 0
         for frame in self.frames:
             for pid in frame.players:
                 if pid not in self.players:
                     self.players.update({pid: PlayerState()})
                 self.players.get(pid).frames += 1
-
 
     def filter_players(self, threshold: int):
         "removes all players which appear for less than [threshold] frames"

@@ -48,7 +48,7 @@ def process_video(video_file):
     if video_file is None:
         return False
     r = requests.post(
-        SERVER_URL + "upload", files={"video_file": video_file}, timeout=120
+        SERVER_URL + "upload", files={"video_file": video_file}, timeout=60
     )
     if r.status_code == 200:
         print("Successfully uploaded file")
@@ -188,7 +188,7 @@ def loading_page():
 
     # Load results page when done
     change_state(state)
-    st.rerun()
+    st.experimental_rerun()
 
 
 def results_page():
@@ -197,10 +197,25 @@ def results_page():
         # Results
         These are the results. Here's the processed video and a minimap of the player positions.
         """
+       
     )
     # st.video(open(st.session_state.processed_video, "rb").read())
+ #here we need to add the call for the videos
 
+
+    response = requests.get(SERVER_URL + "video")
+    if response.status_code == 200:
+        video_bytes = response.content()  # Returns the formatted results as JSON
+        video_bytes = response
+        st.video(video_bytes)
+    else:
+        st.header ("error- Failed to retrieve data from the backend.")
+
+    
     st.markdown("## Statistics")
+    formatted_results = get_formatted_results()
+    if formatted_results:
+        st.json(formatted_results)
     process_results()
     st.download_button(
         label="Download Results",
@@ -208,10 +223,22 @@ def results_page():
         data=st.session_state.result_string,
         file_name="results.txt",
     )
+  
 
     st.button(label="Back to Home", on_click=change_state, args=(0,), type="primary")
 
 
+
+def get_formatted_results():
+    try:
+        response = requests.get(SERVER_URL + "results")
+        if response.status_code == 200:
+            return response.json()  # Returns the formatted results as JSON
+        else:
+            return {"error": "Failed to retrieve data from the backend."}
+    except requests.RequestException as e:
+        return {"error": str(e)}
+    
 def tips_page():
     """
     Loads tips page
@@ -229,7 +256,30 @@ def tips_page():
     # Back to Home
     st.button(label="Back to Home", on_click=change_state, args=(0,))
 
+#Get the results from tmp/results.txt
+def get_res():
+    file_path = "tmp/results.txt"
+    try:
+        with open(file_path, "r") as file:
+            result_string = file.read()
+        result_dict = ast.literal_eval(result_string)
+        return result_dict
+    except FileNotFoundError:
+        st.error(f"File not found: {file_path}")
+        return None
+    except Exception as e:
+        st.error(f"Error reading the file: {e}")
+        return None
 
+    
+def results_api(video_file):
+    if video_file is not None:
+        r = requests.post(
+        SERVER_URL + "result", files={"video_file": video_file}, timeout=60
+        )
+    
+    results = r.json()
+    st.write(results)
 def error_page():
     """
     Loads error page
@@ -386,7 +436,7 @@ elif st.session_state.state == 0:
 elif st.session_state.state == 1:
     loading_page()
 elif st.session_state.state == 2:
-    results_page()
+    results_page(get_res())
 else:
     error_page()
 
