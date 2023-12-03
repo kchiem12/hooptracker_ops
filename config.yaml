@@ -30,6 +30,7 @@ verbose: false # if true, prints model output to console
 skip_model: false # if true, skips model running
 skip_process: false # if true, skips processing
 skip_court: false # if true, skips court detection
+skip_video: false # if true, skips video processing
 skip_player_filter: false # if true, allows all tracked ids to be accounted
 
 # Processing parameters

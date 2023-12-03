@@ -53,5 +53,30 @@ def shots(state: GameState, window: int):
         sa: ShotAttempt = madeshot(state, inte, window=window)
         state.shot_attempts.append(sa)
 
-    state.populate_players_stats()  # populate players stats
-    state.populate_team_stats()  # populate team stats
+    state.populate_players_stats() 
+    state.populate_shot_stats()
+
+# def compute_stats(state: GameState):
+#     """Computes team scores, player assists, and player rebounds"""
+#     for shot in state.shot_attempts:
+#         player = shot.playerid
+#         team = state.team1 if player in state.team1.players else state.team2.players
+#         idx_after = -1
+#         for inte in state.possessions:
+#             if inte.start >= shot.end:
+#                 idx_after = state.possessions.index(inte)
+#                 break
+
+#         team.shots_attempted += 1
+#         if shot.made:
+#             team.shots_made += 1
+#             team.points += shot.value()
+#             # assists
+#             if idx_after >= 2:
+#                 player_prior = state.possessions[idx_after - 2].playerid
+#                 if player_prior in team.players:
+#                     state.players[player_prior].assists += 1
+#         else:
+#             # rebound
+#             rebound_player = state.possessions[idx_after].playerid
+#             state.players[rebound_player].rebounds += 1

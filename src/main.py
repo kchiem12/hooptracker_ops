@@ -62,6 +62,9 @@ if __name__ == "__main__":
         "--skip_court", action="store_true", help="skips court and minimap processing"
     )
     parser.add_argument(
+        "--skip_video", action="store_true", help="skips court and minimap processing"
+    )
+    parser.add_argument(
         "--skip_player_filter", action="store_true", help="skips player filters"
     )
     parser.add_argument(

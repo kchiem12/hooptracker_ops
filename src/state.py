@@ -585,26 +585,34 @@ class GameState:
         self.team1: TeamStats = TeamStats()
         self.team2: TeamStats = TeamStats()
 
-    def populate_team_stats(self):
-        """
-        Populates the scores and shots made/attempted for each team
-        """
+    def populate_shot_stats(self):
+        """Computes team scores, player assists, and player rebounds"""
         for shot in self.shot_attempts:
-            if shot.made:
-                if shot.playerid in self.team1.players:
-                    self.team1.shots_made += 1
-                    self.team1.points += shot.value()
-                else:
-                    self.team2.shots_made += 1
-                    self.team2.points += shot.value()
+            player = shot.playerid
+            team = self.team1 if player in self.team1.players else self.team2
+            idx_after = -1
+            for inte in self.possessions:
+                if inte.start >= shot.end:
+                    idx_after = self.possessions.index(inte)
+                    break
 
-            if shot.playerid in self.team1.players:
-                self.team1.shots_attempted += 1
+            team.shots_attempted += 1
+            if shot.made:
+                team.shots_made += 1
+                team.points += shot.value()
+                # assists
+                if idx_after >= 2:
+                    player_prior = self.possessions[idx_after - 2].playerid
+                    if player_prior in team.players:
+                        self.players[player_prior].assists += 1
             else:
-                self.team2.shots_attempted += 1
+                # rebound
+                rebound_player = self.possessions[idx_after].playerid
+                self.players[rebound_player].rebounds += 1
 
         self.team1.compute_field_goal_percentage()
         self.team2.compute_field_goal_percentage()
+
 
     def populate_players_stats(self):
         """
