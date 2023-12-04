@@ -170,7 +170,8 @@ def run(
         parents=True, exist_ok=True
     )  # make dir
 
-    # Load model
+    # Load
+    # device = '0' # force it to get a gpu
     device = select_device(device)
     model = DetectMultiBackend(
         yolo_weights, device=device, dnn=dnn, data=None, fp16=half
