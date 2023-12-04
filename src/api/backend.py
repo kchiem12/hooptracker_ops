@@ -3,7 +3,7 @@ Backend module built in FastAPI
 """
 import time
 import io
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import StreamingResponse, FileResponse
 import pandas as pd
 import boto3
@@ -18,7 +18,6 @@ import os
 # from ..format import Format
 
 
-
 # Amazon S3 Connection
 # load_dotenv()
 # access_key = os.getenv("AWS_ACCESS_KEY_ID")
@@ -27,6 +26,7 @@ import os
 s3 = boto3.client("s3")
 
 app = FastAPI()
+
 
 # Root
 @app.get("/")
@@ -44,7 +44,7 @@ async def upload_file(video_file: UploadFile = File(...)):
         s3.upload_fileobj(video_file.file, "hooptracker-uploads", file_name + ".mp4")
         return {"message": file_name, "status": "success"}
     except Exception as ex:
-        return {"error": str(ex)}
+        raise HTTPException(status_code=500, detail=str(ex))
 
 
 @app.post("/process")
@@ -55,7 +55,6 @@ async def process_file(file_name: str):
     """
 
     try:
-
         # create a data directory if it does not exist already
         os.makedirs("data", exist_ok=True)
 
@@ -73,7 +72,7 @@ async def process_file(file_name: str):
         s3.upload_file("tmp/processed.mp4", "hooptracker-uploads", court_reenc_path)
         return {"message": f"successfully processed {file_name}", "status": "success"}
     except Exception as ex:
-        return {"error": str(ex)}
+        raise HTTPException(status_code=500, detail=str(ex))
 
 
 @app.get("/download/{file_name}")
@@ -87,8 +86,14 @@ async def download_file(file_name: str):
         download_path_video = "tmp/court_video_reenc-" + file_name + ".mp4"
         download_path_txt = "tmp/results-" + file_name + ".txt"
 
-        s3.download_file("hooptracker-uploads", "court_video_reenc-" + file_name + ".mp4", download_path_video)
-        s3.download_file("hooptracker-uploads", "results-" + file_name + ".txt", download_path_txt)
+        s3.download_file(
+            "hooptracker-uploads",
+            "court_video_reenc-" + file_name + ".mp4",
+            download_path_video,
+        )
+        s3.download_file(
+            "hooptracker-uploads", "results-" + file_name + ".txt", download_path_txt
+        )
 
         temp_dir = "temporary"
         os.makedirs(temp_dir, exist_ok=True)
@@ -106,28 +111,28 @@ async def download_file(file_name: str):
         # clean up temporary directory
         shutil.rmtree(temp_dir)
 
-        return FileResponse(zip_path, media_type="application/zip", filename="files.zip")
+        return FileResponse(
+            zip_path, media_type="application/zip", filename="files.zip"
+        )
         # return {"message": "successfully downloaded", "status": "success"}
     except Exception as ex:
-        return {"error": str(ex)}
-
+        raise HTTPException(status_code=500, detail=str(ex))
 
 
 @app.get("/results")
 async def get_formatted_results():
     try:
-        # Assuming the Format.results() method returns the formatted data as JSON
-        formatted_data = Format.results()
-        return formatted_data
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    
+        return "PLACEHOLDER"
+    except Exception as ex:
+        raise HTTPException(status_code=500, detail=str(ex))
+
 
 @app.get("/video")
 async def get_videos():
-    file_path = 'tmp/minimap.mp4'
-    def iterfile():  
-        with open(file_path, mode="rb") as file_like:  
-            yield from file_like 
+    file_path = "tmp/minimap.mp4"
+
+    def iterfile():
+        with open(file_path, mode="rb") as file_like:
+            yield from file_like
 
     return StreamingResponse(iterfile(), media_type="video/mp4")

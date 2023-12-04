@@ -64,9 +64,11 @@ def process_video(video_file):
     # PROCESS VIDEO
     print("User Video", user_video)
     print("Upload Name", st.session_state.upload_name)
-    
+
     # ASSUME process updates results locally for now TODO
-    r = requests.post(SERVER_URL + "process", params={"file_name": st.session_state.upload_name})
+    r = requests.post(
+        SERVER_URL + "process", params={"file_name": st.session_state.upload_name}
+    )
     if r.status_code == 200:
         print(r.json().get("message"))
         # with open("tmp/results.txt", "r") as file:
@@ -77,6 +79,7 @@ def process_video(video_file):
         return False
 
     return download_results(st.session_state.upload_name)
+
 
 def upload(video_file):
     user_video: str = st.session_state.user_file
@@ -98,10 +101,9 @@ def upload(video_file):
             return False
         st.session_state.is_downloaded = False
 
+
 def health_check():
-    r = requests.get(
-        SERVER_URL, timeout=120
-    )
+    r = requests.get(SERVER_URL, timeout=120)
     if r.status_code == 200:
         print("Successfully got file")
         data = r.json()
@@ -110,6 +112,7 @@ def health_check():
         print("Error getting file")  # TODO make an error handler in frontend
         return False
     st.session_state.is_downloaded = False
+
 
 def download_results(upload_name):
     r = requests.get(f"{SERVER_URL}download/{upload_name}")
@@ -123,12 +126,14 @@ def download_results(upload_name):
         os.makedirs(unzip_dir, exist_ok=True)
 
         # unzip the files
-        with zipfile.ZipFile(zip_file_path, 'r') as zip_ref:
+        with zipfile.ZipFile(zip_file_path, "r") as zip_ref:
             zip_ref.extractall(unzip_dir)
 
-        processed_video_path = os.path.join(unzip_dir, f"court_video_reenc-{upload_name}.mp4")
+        processed_video_path = os.path.join(
+            unzip_dir, f"court_video_reenc-{upload_name}.mp4"
+        )
         result_string_path = os.path.join(unzip_dir, f"results-{upload_name}.txt")
-        st.session_state.result_string_path=result_string_path
+        st.session_state.result_string_path = result_string_path
         with open(result_string_path, "r") as file:
             st.session_state.result_string = file.read()
         print(st.session_state.result_string)
@@ -142,6 +147,7 @@ def download_results(upload_name):
     else:
         print(f"Error downloading file: {r.text}")
         return False
+
 
 # Pages
 def main_page():
@@ -197,40 +203,40 @@ def results_page():
         # Results
         These are the results. Here's the processed video and a minimap of the player positions.
         """
-       
     )
     # st.video(open(st.session_state.processed_video, "rb").read())
- #here we need to add the call for the videos
+    # here we need to add the call for the videos
 
-
-    
-    
     st.markdown("## Statistics")
 
     # Adjusting the function to start parsing from the specific marker and display a sample output
     def parse_file_for_correct_section(file_path, start_marker):
         data = ""
         recording = False
-        with open(file_path, 'r') as file:
+        with open(file_path, "r") as file:
             for line in file:
                 # Start recording when the start marker is found
                 if start_marker in line:
                     recording = True
-                    data += line[line.find(start_marker):]  # Append from the start marker
+                    data += line[
+                        line.find(start_marker) :
+                    ]  # Append from the start marker
                     continue
                 # Continue recording after the start marker is found
                 if recording:
                     data += line
                     # Stop recording at the first closing brace '}' after recording starts
-                    if '}' in line and not '{' in line:
+                    if "}" in line and not "{" in line:
                         break
         return data
 
-# Define the specific start marker
+    # Define the specific start marker
     start_marker = "{'player_1': {'frames':"
 
-# Parse the file for the specific section starting at the defined marker
-    parsed_correct_section = parse_file_for_correct_section(st.session_state.result_string_path, start_marker)
+    # Parse the file for the specific section starting at the defined marker
+    parsed_correct_section = parse_file_for_correct_section(
+        st.session_state.result_string_path, start_marker
+    )
 
     def extract_player_team_stats(data_str):
         formatted_players = ""
@@ -238,34 +244,50 @@ def results_page():
         formatted_team2 = ""
         current_team = None
 
-        lines = data_str.split(',')
+        lines = data_str.split(",")
 
         for line in lines:
-            
             if "'team1'" in line:
-                current_team = 'team1'
+                current_team = "team1"
             elif "'team2'" in line:
-                current_team = 'team2'
-            if any(key in line for key in ['frames']):
+                current_team = "team2"
+            if any(key in line for key in ["frames"]):
                 line = line.replace("{", "").replace("}", "").replace("'", "")
-                formatted_players +="\n"+ line.strip() + "\n"
-            if any(key in line for key in ['field_goals_attempted', 'field_goals', 'points', 'field_goal_percentage']):
+                formatted_players += "\n" + line.strip() + "\n"
+            if any(
+                key in line
+                for key in [
+                    "field_goals_attempted",
+                    "field_goals",
+                    "points",
+                    "field_goal_percentage",
+                ]
+            ):
                 line = line.replace("{", "").replace("}", "").replace("'", "")
                 formatted_players += line.strip() + "\n"
 
-
-            elif any(key in line for key in ['shots_attempted', 'shots_made', 'points', 'field_goal_percentage']):
+            elif any(
+                key in line
+                for key in [
+                    "shots_attempted",
+                    "shots_made",
+                    "points",
+                    "field_goal_percentage",
+                ]
+            ):
                 line = line.replace("{", "").replace("}", "").replace("'", "").strip()
-                if current_team == 'team1':
+                if current_team == "team1":
                     formatted_team1 += line + "\n"
-                elif current_team == 'team2':
+                elif current_team == "team2":
                     formatted_team2 += line + "\n"
         if "ball:" in formatted_players:
             formatted_players = formatted_players.split("ball:")[0]
 
         return formatted_players, formatted_team1, formatted_team2
 
-    formatted_players, formatted_team1, formatted_team2 = extract_player_team_stats(parsed_correct_section)
+    formatted_players, formatted_team1, formatted_team2 = extract_player_team_stats(
+        parsed_correct_section
+    )
 
     def display_stats():
         st.markdown("### Player Statistics")
@@ -277,10 +299,9 @@ def results_page():
         st.markdown("### Team 2 Statistics")
         st.text(formatted_team2)
 
-# Call the function in your Streamlit app
+    # Call the function in your Streamlit app
 
-
-# Call the function in your Streamlit app
+    # Call the function in your Streamlit app
     display_stats()
     st.markdown("## Processed Video")
     try:
@@ -293,10 +314,8 @@ def results_page():
         data=st.session_state.result_string,
         file_name=st.session_state.result_string_path,
     )
-  
 
     st.button(label="Back to Home", on_click=change_state, args=(0,), type="primary")
-
 
 
 def get_formatted_results():
@@ -308,7 +327,8 @@ def get_formatted_results():
             return {"error": "Failed to retrieve data from the backend."}
     except requests.RequestException as e:
         return {"error": str(e)}
-    
+
+
 def tips_page():
     """
     Loads tips page
@@ -326,7 +346,8 @@ def tips_page():
     # Back to Home
     st.button(label="Back to Home", on_click=change_state, args=(0,))
 
-#Get the results from tmp/results.txt
+
+# Get the results from tmp/results.txt
 def get_res():
     file_path = "tmp/results.txt"
     try:
@@ -341,15 +362,17 @@ def get_res():
         st.error(f"Error reading the file: {e}")
         return None
 
-    
+
 def results_api(video_file):
     if video_file is not None:
         r = requests.post(
-        SERVER_URL + "result", files={"video_file": video_file}, timeout=60
+            SERVER_URL + "result", files={"video_file": video_file}, timeout=60
         )
-    
+
     results = r.json()
     st.write(results)
+
+
 def error_page():
     """
     Loads error page
@@ -513,10 +536,6 @@ else:
 setup_sidebar()
 
 
-
-
-
-
 # ============================
 
 # import sys
@@ -586,7 +605,7 @@ setup_sidebar()
 #     # PROCESS VIDEO
 #     print("User Video", user_video)
 #     print("Upload Name", st.session_state.upload_name)
-    
+
 #     # ASSUME process updates results locally for now TODO
 #     r = requests.post(SERVER_URL + "process", params={"file_name": st.session_state.upload_name})
 #     if r.status_code == 200:
@@ -694,7 +713,7 @@ setup_sidebar()
 #     st.markdown(
 #         """
 #         # Processing...
-#         Please wait while we upload and process your video. 
+#         Please wait while we upload and process your video.
 #     """
 #     )
 
@@ -720,14 +739,12 @@ setup_sidebar()
 #         # Results
 #         These are the results. Here's the processed video and a minimap of the player positions.
 #         """
-       
+
 #     )
 #     # st.video(open(st.session_state.processed_video, "rb").read())
 #  #here we need to add the call for the videos
 
 
-    
-    
 #     st.markdown("## Statistics")
 
 #     # Adjusting the function to start parsing from the specific marker and display a sample output
@@ -764,7 +781,7 @@ setup_sidebar()
 #         lines = data_str.split(',')
 
 #         for line in lines:
-            
+
 #             if "'team1'" in line:
 #                 current_team = 'team1'
 #             elif "'team2'" in line:
@@ -824,7 +841,7 @@ setup_sidebar()
 #     st.markdown("## Processed Video")
 #     try:
 #         # video_file = open(st.session_state.processed_video, 'rb')
-#         # video_bytes = video_file.read() 
+#         # video_bytes = video_file.read()
 #         st.video(st.session_state.processed_video)
 #     except Exception as e:
 #         st.error("Processed video not found.")
@@ -834,10 +851,9 @@ setup_sidebar()
 #         data=st.session_state.result_string,
 #         file_name=st.session_state.result_string_path,
 #     )
-  
+
 
 #     st.button(label="Back to Home", on_click=change_state, args=(0,), type="primary")
-
 
 
 # def get_formatted_results():
@@ -849,7 +865,7 @@ setup_sidebar()
 #             return {"error": "Failed to retrieve data from the backend."}
 #     except requests.RequestException as e:
 #         return {"error": str(e)}
-    
+
 # def tips_page():
 #     """
 #     Loads tips page
@@ -882,13 +898,13 @@ setup_sidebar()
 #         st.error(f"Error reading the file: {e}")
 #         return None
 
-    
+
 # def results_api(video_file):
 #     if video_file is not None:
 #         r = requests.post(
 #         SERVER_URL + "result", files={"video_file": video_file}, timeout=60
 #         )
-    
+
 #     results = r.json()
 #     st.write(results)
 # def error_page():
@@ -899,7 +915,7 @@ setup_sidebar()
 #         """
 #         # Error: Webpage Not Found
 #         Try reloading the page to fix the error.
-#         If there are any additional issues, please report errors to us 
+#         If there are any additional issues, please report errors to us
 #         [here](https://github.com/CornellDataScience/Ball-101).
 #         """
 #     )
