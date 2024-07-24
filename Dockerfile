@@ -5,10 +5,13 @@ WORKDIR /app
 
 COPY . .
 
-RUN pip install -r requirements.txt
-
 RUN apt-get update && apt-get install -y \
-  libgl1-mesa-glx \
-  && rm -rf /var/lib/apt/lists/*
+  libhdf5-dev \
+  libhdf5-serial-dev \
+  hdf5-tools \
+  gcc \
+  && apt-get clean
+
+RUN pip install -r requirements.txt
 
 CMD uvicorn src.api.backend:app --reload --host 0.0.0.0 --port 8000

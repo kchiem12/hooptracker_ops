@@ -41,7 +41,7 @@ async def upload_file(video_file: UploadFile = File(...)):
     """
     file_name = time.strftime("%Y%m%d-%H%M%S")
     try:
-        s3.upload_fileobj(video_file.file, "hooptracker-uploads", file_name + ".mp4")
+        s3.upload_fileobj(video_file.file, "hooptracker-ops", file_name + ".mp4")
         return {"message": file_name, "status": "success"}
     except Exception as ex:
         raise HTTPException(status_code=500, detail=str(ex))
@@ -63,13 +63,13 @@ async def process_file(file_name: str):
 
         new_path = "data/" + file_name + ".mp4"
 
-        s3.download_file("hooptracker-uploads", file_name + ".mp4", new_path)
+        s3.download_file("hooptracker-ops", file_name + ".mp4", new_path)
         command = ["python", "src/main.py", "--video_file", new_path]
         subprocess.run(command)
         results_path = "results-" + file_name + ".txt"
         court_reenc_path = "court_video_reenc-" + file_name + ".mp4"
-        s3.upload_file("tmp/results.txt", "hooptracker-uploads", results_path)
-        s3.upload_file("tmp/processed.mp4", "hooptracker-uploads", court_reenc_path)
+        s3.upload_file("tmp/results.txt", "hooptracker-ops", results_path)
+        s3.upload_file("tmp/processed.mp4", "hooptracker-ops", court_reenc_path)
         return {"message": f"successfully processed {file_name}", "status": "success"}
     except Exception as ex:
         raise HTTPException(status_code=500, detail=str(ex))
@@ -87,12 +87,12 @@ async def download_file(file_name: str):
         download_path_txt = "tmp/results-" + file_name + ".txt"
 
         s3.download_file(
-            "hooptracker-uploads",
+            "hooptracker-ops",
             "court_video_reenc-" + file_name + ".mp4",
             download_path_video,
         )
         s3.download_file(
-            "hooptracker-uploads", "results-" + file_name + ".txt", download_path_txt
+            "hooptracker-ops", "results-" + file_name + ".txt", download_path_txt
         )
 
         temp_dir = "temporary"
