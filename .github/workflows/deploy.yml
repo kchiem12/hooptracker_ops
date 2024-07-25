@@ -11,6 +11,7 @@ env:
   ECS_CLUSTER: hooptracker
   ECS_TASK_DEFINITION: .aws/task_definition.json
   CONTAINER_NAME: hooptracker-ml-container
+  AWS_REGION: us-east-1
 
 jobs:
   deploy:
