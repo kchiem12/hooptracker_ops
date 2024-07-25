@@ -9,27 +9,26 @@ jobs:
       matrix:
         python-version: ["3.8"]
     steps:
-    - uses: actions/checkout@v3
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        sudo apt-get install -y ffmpeg
-    - name: Initialising AWS credentials
-      run: cat ${{github.workspace}}/.env | base64
-    - name: Setting AWS credentials
-      env:
-        DATA: ${{ secrets.AWS_ENV }}
-      run: echo $DATA >> ${{github.workspace}}/.env
-    - name: Run CI tests
-      run: |
-        python src/main.py --skip_court --video_file data/short_new_2.mov
-        if [ ! -f ${{github.workspace}}/tmp/processed.mp4 ]; then
-          echo "model run failed: output does not exist"
-          exit 1
-        fi
-
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          sudo apt-get install -y ffmpeg
+      - name: Initialising AWS credentials
+        run: cat ${{github.workspace}}/.env | base64
+      - name: Setting AWS credentials
+        env:
+          DATA: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        run: echo $DATA >> ${{github.workspace}}/.env
+      - name: Run CI tests
+        run: |
+          python src/main.py --skip_court --video_file data/short_new_2.mov
+          if [ ! -f ${{github.workspace}}/tmp/processed.mp4 ]; then
+            echo "model run failed: output does not exist"
+            exit 1
+          fi
