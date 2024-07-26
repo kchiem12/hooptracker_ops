@@ -30,7 +30,7 @@ if "state" not in st.session_state:
     st.session_state.user_file = "tmp/user_upload.mp4"
 
 # Backend Connection
-SERVER_URL = "http://34.205.37.69:8000/"
+SERVER_URL = "http://3.95.210.247:8000/"
 
 
 def process_video(video_file):
